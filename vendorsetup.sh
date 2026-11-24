@@ -10,7 +10,7 @@ if [ ! -d "hardware/xiaomi" ]; then
     git clone https://github.com/LineageOS/android_hardware_xiaomi.git hardware/xiaomi
 fi
 
-if [ ! -d "packages_apps_LunarisDolby"]; then
+if [ ! -d "packages/apps/LunarisDolby"]; then
      git clone https://github.com/avalon-stuffs/android_packages_apps_LunarisDolby packages/apps/LunarisDolby
 fi   
 
