@@ -10,10 +10,9 @@ if [ ! -d "hardware/xiaomi" ]; then
     git clone https://github.com/LineageOS/android_hardware_xiaomi.git hardware/xiaomi
 fi
 
-# Viper4Android
-if [ ! -d "packages/apps/ViPER4AndroidFX" ]; then
-    git clone https://github.com/AxionAOSP/android_packages_apps_ViPER4AndroidFX.git -b v4a packages/apps/ViPER4AndroidFX
-fi
+if [ ! -d "packages_apps_LunarisDolby"]; then
+     git clone https://github.com/avalon-stuffs/android_packages_apps_LunarisDolby packages/apps/LunarisDolby
+fi   
 
 # Xiaomi Camera (MIUI Camera)
 if [ ! -d "device/xiaomi/camera" ]; then
@@ -25,8 +24,8 @@ if [ ! -d "vendor/xiaomi/camera" ]; then
 fi
 
 # Dolby
-if [ ! -d "hardware/dolby" ]; then
-    git clone https://github.com/acerhizmq/hardware_dolby.git hardware/dolby
+if [ ! -d "vendor/sony/dolby" ]; then
+    git clone https://github.com/avalon-stuffs/proprietary_vendor_sony_dolby.git vendor/sony/dolby
 fi
 
 # Bluetooth
