@@ -7,13 +7,11 @@
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 TARGET_SUPPORTS_OMX_SERVICE := false
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-$(call inherit-product, vendor/infinity/config/common_full_phone.mk)
+# Some initial call from LineageOS
+$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
 # Inherit from device.
 $(call inherit-product, $(LOCAL_PATH)/device.mk)
-
-# infinity flags
-INFINITY_MAINTAINER := "MinitxT"
 
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.product.mod_device=veux_global \
@@ -30,13 +28,11 @@ PRODUCT_BRAND := Redmi
 PRODUCT_DEVICE := veux
 PRODUCT_MANUFACTURER := Xiaomi
 PRODUCT_MODEL := 2201116SG
-PRODUCT_NAME := rising_veux
+PRODUCT_NAME := lineage_veux
 
 PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
-    RisingChipset="Snapdragon® 695 5G" \
-    RisingMaintainer="acerhizm" \
     BuildDesc="veux_eea-user 13 TKQ1.221114.001 V816.0.13.0.TKCEUXM release-keys" \
     BuildFingerprint=Redmi/veux_eea/veux:13/TKQ1.221114.001/V816.0.13.0.TKCEUXM:user/release-keys \
     DeviceProduct=veux_eea
