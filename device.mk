@@ -126,6 +126,8 @@ PRODUCT_COPY_FILES += \
 
 # Dolby
 $(call inherit-product, vendor/sony/dolby/sonydolby.mk)
+PRODUCT_PACKAGES += \
+        LunarisDolby
 
 # DRM
 PRODUCT_PACKAGES += \
