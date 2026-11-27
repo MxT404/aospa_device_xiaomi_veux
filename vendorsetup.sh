@@ -133,13 +133,12 @@ registered = set(subprocess.check_output(
     ["repo", "list", "--all", "--path-only"], text=True,
 ).splitlines())
 standalone = {
-    "device/xiaomi/camera",
     "hardware/dolby",
     "hardware/qcom-caf/bt",
     "hardware/xiaomi",
     "kernel/xiaomi/veux",
     "packages/apps/LunarisDolby",
-    "vendor/xiaomi/camera",
+    "vendor/xiaomi/miuicamera-veux",
     "vendor/xiaomi/veux",
 } - registered
 

@@ -32,9 +32,8 @@ Run the device build script from the checkout root.
 device/xiaomi/veux/tools/build-calcite.sh -t userdebug -j24
 ```
 
-The script applies [the Calcite patches](patches/calcite) and the MIUI Camera
-lens-switch fix before invoking `rom-build.sh`. It checks each project and the
-camera APK first and skips patches already applied.
+The script checks and applies [the Calcite patches](patches/calcite) before
+invoking `rom-build.sh`. It skips patches already applied.
 If a source revision conflicts, the script reports the affected project before
 writing any patches. Run `repo sync` separately before running the script.
 

@@ -525,5 +525,8 @@ PRODUCT_PACKAGES += \
 # Inherit from proprietary targets
 $(call inherit-product, vendor/xiaomi/veux/veux-vendor.mk)
 
-# Leica Camera (HolyBear)
-$(call inherit-product, device/xiaomi/camera/miuicamera.mk)
+# MIUI Camera for veux
+PRODUCT_SOURCE_ROOT_DIRS += \
+    -device/xiaomi/camera \
+    -vendor/xiaomi/camera
+$(call inherit-product, vendor/xiaomi/miuicamera-veux/MiuiCamera-veux.mk)

@@ -1,0 +1,26 @@
+diff --git a/common/Android.bp b/common/Android.bp
+index 09b14644a722b33e087f5cd932a85a9c63e2141b..8e5330a3b0f274a3bb594c3bd63e325537038474 100644
+--- a/common/Android.bp
++++ b/common/Android.bp
+@@ -8,7 +8,6 @@ android_app_import {
+     name: "MiuiCamera",
+     apk: "prebuilt/MiuiCamera.apk",
+     overrides: [
+-        "Aperture",
+         "Camera2",
+         "GoogleCamera",
+         "GoogleCameraGo",
+diff --git a/common/SEPolicy.mk b/common/SEPolicy.mk
+index 58f6cc1c7589a19e039634de9674f14fb2bc2ebd..1b0b57fb5a7e4dfebd1572b82f9358e02921d911 100644
+--- a/common/SEPolicy.mk
++++ b/common/SEPolicy.mk
+@@ -5,4 +5,5 @@
+ #
+ 
+ SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += vendor/xiaomi/miuicamera-veux/common/sepolicy/public
++SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += vendor/xiaomi/miuicamera-veux/common/sepolicy/private
+ BOARD_VENDOR_SEPOLICY_DIRS += vendor/xiaomi/miuicamera-veux/common/sepolicy/vendor
+diff --git a/common/sepolicy/public/seapp_contexts b/common/sepolicy/private/seapp_contexts
+similarity index 100%
+rename from common/sepolicy/public/seapp_contexts
+rename to common/sepolicy/private/seapp_contexts

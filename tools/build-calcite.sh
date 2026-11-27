@@ -93,10 +93,6 @@ if (( conflicts )); then
     exit 1
 fi
 
-miuicamera=vendor/xiaomi/camera/proprietary/system/priv-app/MiuiCamera/MiuiCamera.apk
-camera_patch=device/xiaomi/veux/tools/patch-miuicamera.py
-python3 "$camera_patch" --check "$miuicamera"
-
 if [[ $mode == --check ]]; then
     exit 0
 fi
@@ -107,8 +103,6 @@ for i in "${!pending_projects[@]}"; do
     git -C "$project" apply --whitespace=nowarn "$top/$patch"
     printf 'Applied: %s\n' "$project"
 done
-
-python3 "$camera_patch" "$miuicamera"
 
 if [[ $mode == --apply-only ]]; then
     exit 0
