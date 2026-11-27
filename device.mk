@@ -3,6 +3,24 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+# Set the platform before the AOSPA Qualcomm product configuration runs.
+TARGET_BOARD_PLATFORM := holi
+
+# Enable the display HAL's standard Qualcomm kernel-header dependencies.
+$(call soong_config_set_bool,qtidisplay,default,true)
+# Register the HIDL 4.0 allocator used by the installed graphics mapper.
+$(call soong_config_set_bool,qtidisplay,gralloc4,true)
+$(call soong_config_set_bool,veux,use_aosp_bluetooth_audio,true)
+
+PRODUCT_SYSTEM_EXT_PROPERTIES += \
+    ro.face.sense_service.camera_id=1
+
+# The veux kernel exposes UFS queries through the BSG interface.
+$(call soong_config_set,ufsbsg,ufsframework,bsg)
+
+# The stock netmgrd links against the legacy RMNET API.
+$(call soong_config_set_bool,rmnetctl,old_rmnet_data,true)
+
 # Add common definitions for Qualcomm
 $(call inherit-product, hardware/qcom-caf/common/common.mk)
 
@@ -371,15 +389,22 @@ PRODUCT_PACKAGES += \
 # Shipping API level
 PRODUCT_SHIPPING_API_LEVEL := 30
 
+# The AOSPA common tree provides these Qualcomm and health modules.
+PRODUCT_SOURCE_ROOT_DIRS += \
+    -hardware/lineage/interfaces/health \
+    -hardware/qcom-caf/common/Android.bp \
+    -hardware/qcom-caf/common/fwk-detect \
+    -hardware/qcom-caf/common/memtrack
+
 # Soong
 PRODUCT_SOONG_NAMESPACES += \
     $(LOCAL_PATH) \
+    device/qcom/common/vendor/usb \
     hardware/google/interfaces \
     hardware/google/pixel/power-libperfmgr \
     hardware/lineage/interfaces/power-libperfmgr \
     hardware/qcom-caf/common/libqti-perfd-client \
-    hardware/qcom-caf/wlan \
-    hardware/qcom-caf/wlan/qcwcn \
+    hardware/qcom/wlan/qcwcn \
     hardware/xiaomi \
     vendor/qcom/opensource/usb/etc
 
@@ -403,7 +428,6 @@ PRODUCT_PACKAGES += \
     xiaomi-telephony-stub
 
 PRODUCT_BOOT_JARS += \
-    telephony-ext \
     xiaomi-telephony-stub
 
 # APN configuration - Jio (India) data + IMS APNs

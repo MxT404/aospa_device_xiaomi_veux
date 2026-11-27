@@ -115,16 +115,12 @@ ro.vendor.bluetooth.wipower=false
 # Do not set camera.disable_zsl_mode=true: MIUI Camera video uses CamX
 # RealTimeFeatureZSLPreviewRaw_* + EIS/MCTF; forcing API1 ZSL off while the HAL
 # still runs ZSL pipelines causes preview/video glitches and warped output.
-camera.force_snaps_on_shutter_denoise=false
 vendor.camera.aux.packagelist=org.codeaurora.snapcam,com.android.camera,com.xiaomi.camera
 persist.camera.aux.packagelist=org.codeaurora.snapcam,com.android.camera,com.xiaomi.camera
 persist.vendor.camera.privapp.list=com.android.camera,org.codeaurora.snapcam,com.shamim.cam
 persist.vendor.camera.HAL3.enabled=1
 vendor.camera.lowpower.record.enable=0
 persist.vendor.camera.logInfoMask=false
-
-# Face Unlock
-ro.face.sense_service.camera_id=1
 
 # Dalvik
 dalvik.vm.dex2oat64.enabled=true

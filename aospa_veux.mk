@@ -3,15 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# Inherit from those products. Most specific first.
+# Inherit from framework configuration.
+TARGET_BUILD_VANILLA ?= false
+TARGET_USES_AOSP_WEBVIEW := true
+PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 TARGET_SUPPORTS_OMX_SERVICE := false
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-# Some initial call from LineageOS
-$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base_telephony.mk)
 
-# Inherit from device.
-$(call inherit-product, $(LOCAL_PATH)/device.mk)
+# Inherit from veux device configuration.
+$(call inherit-product, device/xiaomi/veux/device.mk)
+
+# Inherit from common AOSPA configuration.
+$(call inherit-product, vendor/aospa/target/product/aospa-target.mk)
 
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.product.mod_device=veux_global \
@@ -28,9 +32,7 @@ PRODUCT_BRAND := Redmi
 PRODUCT_DEVICE := veux
 PRODUCT_MANUFACTURER := Xiaomi
 PRODUCT_MODEL := 2201116SG
-PRODUCT_NAME := lineage_veux
-
-PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
+PRODUCT_NAME := aospa_veux
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildDesc="veux_eea-user 13 TKQ1.221114.001 V816.0.13.0.TKCEUXM release-keys" \

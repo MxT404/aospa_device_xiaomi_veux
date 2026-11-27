@@ -92,7 +92,7 @@ BOARD_KERNEL_CMDLINE := \
 
 TARGET_KERNEL_CONFIG := vendor/veux-qgki_defconfig
 TARGET_KERNEL_SOURCE := kernel/xiaomi/veux
-TARGET_KERNEL_CLANG_VERSION := r563880c
+KERNEL_CLANG_VERSION := r563880c
 
 
 # OTA assert
@@ -172,9 +172,9 @@ BOARD_AVB_VBMETA_SYSTEM_ROLLBACK_INDEX_LOCATION := 2
 # WiFi
 BOARD_WLAN_DEVICE := qcwcn
 BOARD_HOSTAPD_DRIVER := NL80211
-BOARD_HOSTAPD_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
+BOARD_HOSTAPD_PRIVATE_LIB := //hardware/qcom/wlan/qcwcn/wpa_supplicant_8_lib:lib_driver_cmd_$(BOARD_WLAN_DEVICE)
 BOARD_WPA_SUPPLICANT_DRIVER := NL80211
-BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
+BOARD_WPA_SUPPLICANT_PRIVATE_LIB := //hardware/qcom/wlan/qcwcn/wpa_supplicant_8_lib:lib_driver_cmd_$(BOARD_WLAN_DEVICE)
 BOARD_WPA_SUPPLICANT_PRIVATE_LIB_EVENT := "ON"
 QC_WIFI_HIDL_FEATURE_DUAL_AP := true
 WIFI_DRIVER_DEFAULT := qca_cld3
@@ -188,6 +188,3 @@ WPA_SUPPLICANT_VERSION := VER_0_8_X
 
 PRODUCT_SOONG_NAMESPACES += \
     hardware/qcom-caf/bt/libbt-vendor
-
-# Include Lineage/Lunaris board configurations to export variables to Soong
-include vendor/lineage/config/BoardConfigLineage.mk
