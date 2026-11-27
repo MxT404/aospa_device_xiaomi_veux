@@ -2,12 +2,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <manifest>
   <include name="local_manifests/platforms/holi.xml" />
-  <project path="device/xiaomi/spes" name="AOSPA/android_device_xiaomi_spes" remote="aospa" revision="vauxite" />
+  <project path="device/xiaomi/spes" name="MxT404/android_device_xiaomi_spes" remote="github" revision="vauxite" />
   <project path="device/xiaomi/veux" name="MxT404/aospa_device_xiaomi_veux" remote="github" revision="veux-calcite" />
   <project path="device/xiaomi/camera" name="MxT404/device_xiaomi_camera" remote="github" revision="veux-calcite" />
-  <project path="hardware/dolby" name="acerhizmq/hardware_dolby" remote="github" revision="9c1593ddbad50b9b7a5b165482c9f9446b02cc85" upstream="refs/heads/risingosmods-17" />
+  <project path="hardware/dolby" name="MxT404/hardware_dolby" remote="github" revision="9c1593ddbad50b9b7a5b165482c9f9446b02cc85" upstream="refs/heads/risingosmods-17" />
   <project path="hardware/qcom-caf/bt" name="MxT404/hardware_qcom_bt" remote="github" revision="veux-calcite" />
-  <project path="hardware/xiaomi" name="AOSPA/android_hardware_xiaomi" remote="aospa" revision="calcite" />
+  <project path="hardware/xiaomi" name="MxT404/android_hardware_xiaomi" remote="github" revision="veux-calcite" />
   <project path="kernel/xiaomi/veux" name="MxT404/kernel_xiaomi_veux" remote="github" revision="veux-calcite" clone-depth="1" />
   <project path="packages/apps/LunarisDolby" name="MxT404/android_packages_apps_LunarisDolby" remote="github" revision="7b8248dd8f4bd9ee3de960b55ebf5c82835125aa" upstream="refs/heads/veux-calcite" />
   <project path="vendor/xiaomi/camera" name="MxT404/vendor_xiaomi_camera" remote="github" revision="veux-calcite" clone-depth="1" />
