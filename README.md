@@ -2,8 +2,19 @@ Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 1
 
 ## Building AOSPA Calcite
 
-Sync the AOSPA `calcite` checkout with the veux local manifests, then run the
-device build script from the checkout root.
+Initialize AOSPA Calcite and install the local manifests for this branch.
+Git LFS is required for the Xiaomi vendor prebuilts.
+
+```bash
+repo init -u https://github.com/AOSPA/manifest -b calcite --depth=1 --git-lfs
+mkdir -p .repo/local_manifests/platforms
+base=https://raw.githubusercontent.com/MxT404/aospa_device_xiaomi_veux/veux-calcite/local_manifests
+curl -fsSL "$base/veux.xml" -o .repo/local_manifests/veux.xml
+curl -fsSL "$base/platforms/holi.xml" -o .repo/local_manifests/platforms/holi.xml
+repo sync -c
+```
+
+Run the device build script from the checkout root.
 
 ```bash
 device/xiaomi/veux/tools/build-calcite.sh -t userdebug -j24

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: Paranoid Android -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<manifest>
+  <!-- SM8350-family HALs from Calcite's Lahaina platform, including the Holi audio SKU. -->
+  <project path="vendor/qcom/opensource/audio-hal/primary-hal" name="MxT404/android_hardware_qcom_audio" remote="github" revision="veux-calcite" />
+  <project path="hardware/qcom/display" name="AOSPA/android_hardware_qcom_display" remote="aospa" revision="calcite-888" />
+  <!-- The veux device project contains its own GNSS HAL and configurations. -->
+  <project path="hardware/qcom/media" name="AOSPA/android_hardware_qcom_media" remote="aospa" revision="calcite-888" />
+  <remove-project name="AOSPA/android_hardware_qcom_thermal" />
+  <project path="vendor/qcom/opensource/thermal-hal" name="AOSPA/android_hardware_qcom_thermal" remote="aospa" revision="calcite-legacy" />
+  <project path="vendor/qcom/opensource/audio-hal/st-hal" name="MxT404/android_vendor_qcom_opensource_audio-hal_st-hal" remote="github" revision="veux-calcite" />
+  <!-- Paths imported by the veux device and vendor trees, from the LineageOS 24.0 manifest. -->
+  <project path="device/lineage/sepolicy" name="LineageOS/android_device_lineage_sepolicy" remote="github" revision="lineage-24.0" />
+  <project path="hardware/google/pixel" name="LineageOS/android_hardware_google_pixel" remote="github" revision="lineage-24.0" />
+  <project path="hardware/lineage/interfaces" name="LineageOS/android_hardware_lineage_interfaces" remote="github" revision="lineage-24.0" />
+  <project path="hardware/qcom-caf/common" name="LineageOS/android_hardware_qcom-caf_common" remote="github" revision="4c13a7e651086fc4332a609cff64d2af3d4e60fd" upstream="refs/heads/lineage-24.0">
+    <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8350/Android.bp" />
+  </project>
+  <project path="vendor/qcom/opensource/display" name="LineageOS/android_vendor_qcom_opensource_display" remote="github" revision="74a5c56b6229dbe518b43cf781e4c52e1a5ecb71" upstream="refs/heads/lineage-24.0" />
+</manifest>
