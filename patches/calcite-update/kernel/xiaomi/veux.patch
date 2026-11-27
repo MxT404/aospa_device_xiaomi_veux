@@ -1,0 +1,166 @@
+diff --git a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
+index 2f36f5b32..678d7dd20 100644
+--- a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
++++ b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
+@@ -1023,12 +1023,41 @@ static const struct file_operations gtp_gesture_ops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
++#if defined(CONFIG_DRM)
++static ssize_t goodix_display_inactive_write(struct file *file,
++		const char __user *buf, size_t count, loff_t *pos)
++{
++	struct goodix_ts_core *cd = PDE_DATA(file_inode(file));
++	bool inactive;
++	int ret;
++
++	ret = kstrtobool_from_user(buf, count, &inactive);
++	if (ret)
++		return ret;
++
++	WRITE_ONCE(cd->display_inactive, inactive);
++	queue_work(cd->ts_workqueue, &cd->display_state_work);
++	return count;
++}
++
++static const struct file_operations goodix_display_inactive_ops = {
++	.write = goodix_display_inactive_write,
++	.open = simple_open,
++	.owner = THIS_MODULE,
++};
++#endif
++
+ static int goodix_ts_procfs_init(struct goodix_ts_core *core_data)
+ {
+ 	goodix_touch_proc_dir = proc_mkdir(TOUCH_PROC_DIR, NULL);
+ 	proc_create_data(TOUCH_OS_LOCKDOWN, 0777, goodix_touch_proc_dir, &goodix_lockdown_info_ops, core_data);
+ 	proc_create_data("tp_info", 0777, NULL, &goodix_fw_version_info_ops, core_data);
+ 	proc_create_data("tp_gesture", 0777, NULL, &gtp_gesture_ops, core_data);
++#if defined(CONFIG_DRM)
++	if (core_data->ts_workqueue)
++		proc_create_data("tp_display_inactive", 0600, NULL,
++				 &goodix_display_inactive_ops, core_data);
++#endif
+ 	return 0;
+ }
+ #if defined(CONFIG_WT_QGKI)
+@@ -1977,23 +2006,20 @@ static int goodix_ts_resume(struct goodix_ts_core *core_data)
+ }
+ 
+ #if defined(CONFIG_DRM)
+-static void goodix_ts_resume_work(struct work_struct *work)
+-{
+-	struct goodix_ts_core *core_data =
+-		container_of(work, struct goodix_ts_core, resume_work);
+-
+-	if (atomic_read(&core_data->suspended))
+-		goodix_ts_resume(core_data);
+-}
+-
+-static void goodix_ts_suspend_work(struct work_struct *work)
++static void goodix_ts_display_state_work(struct work_struct *work)
+ {
+ 	struct goodix_ts_core *core_data =
+-		container_of(work, struct goodix_ts_core, suspend_work);
++		container_of(work, struct goodix_ts_core, display_state_work);
++	bool inactive = READ_ONCE(core_data->display_inactive) ||
++			READ_ONCE(core_data->panel_blanked);
+ 
+-	/* A low-power transition can also arrive through the blank notifier. */
+-	if (!atomic_read(&core_data->suspended))
++	/* Android can show AOD while the DSI panel remains in video mode. */
++	if (inactive == !!atomic_read(&core_data->suspended))
++		return;
++	if (inactive)
+ 		goodix_ts_suspend(core_data);
++	else
++		goodix_ts_resume(core_data);
+ }
+ 
+ static int drm_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+@@ -2002,20 +2028,25 @@ static int drm_notifier_callback(struct notifier_block *self, unsigned long even
+ 	struct drm_panel_notifier *evdata = data;
+ 	int *blank = evdata->data;
+ 
++	if (!core_data->ts_workqueue)
++		return 0;
++
+ 	switch (*blank) {
+ 	case DRM_PANEL_BLANK_UNBLANK:
+ 		ts_debug("resume: event = %lu, blank = %d", event, *blank);
+ 		if (event == DRM_PANEL_EVENT_BLANK ||
+-		    event == DRM_PANEL_EVENT_LOW_POWER)
+-			queue_work(core_data->ts_workqueue, &core_data->resume_work);
++		    event == DRM_PANEL_EVENT_LOW_POWER) {
++			WRITE_ONCE(core_data->panel_blanked, false);
++			queue_work(core_data->ts_workqueue, &core_data->display_state_work);
++		}
+ 		break;
+ 	case DRM_PANEL_BLANK_POWERDOWN:
+ 	case DRM_PANEL_BLANK_LP:
+ 		ts_debug("suspend: event = %lu, blank = %d", event, *blank);
+ 		if (event == DRM_PANEL_EARLY_EVENT_BLANK ||
+ 		    event == DRM_PANEL_EVENT_LOW_POWER) {
+-			cancel_work_sync(&core_data->resume_work);
+-			queue_work(core_data->ts_workqueue, &core_data->suspend_work);
++			WRITE_ONCE(core_data->panel_blanked, true);
++			queue_work(core_data->ts_workqueue, &core_data->display_state_work);
+ 		}
+ 		break;
+ 
+@@ -2401,10 +2432,8 @@ static int goodix_ts_probe(struct platform_device *pdev)
+ 	goodix_ts_register_notifier(&core_data->ts_notifier);
+ 
+ #if defined(CONFIG_DRM)
+-	if (core_data->ts_workqueue) {
+-		INIT_WORK(&core_data->resume_work, goodix_ts_resume_work);
+-		INIT_WORK(&core_data->suspend_work, goodix_ts_suspend_work);
+-	}
++	if (core_data->ts_workqueue)
++		INIT_WORK(&core_data->display_state_work, goodix_ts_display_state_work);
+ #endif
+ 
+ 	core_data->initialized = 1;
+@@ -2461,16 +2490,17 @@ static int goodix_ts_remove(struct platform_device *pdev)
+ #ifdef CONFIG_WT_QGKI
+ 	charger_notifier_chain_unregister(&core_data->charger_notif);
+ #endif
+-	if (core_data->ts_workqueue)
+-		destroy_workqueue(core_data->ts_workqueue);
+ #if defined(CONFIG_DRM)
+ 	if (active_panel)
+ 		drm_panel_notifier_unregister(active_panel, &core_data->drm_notifier);
++	remove_proc_entry("tp_display_inactive", NULL);
+ #elif defined(CONFIG_FB)
+ 	fb_unregister_client(&core_data->fb_notifier);
+ #elif defined(CONFIG_HAS_EARLYSUSPEND)
+ 	unregister_early_suspend(&core_data->early_suspend);
+ #endif
++	if (core_data->ts_workqueue)
++		destroy_workqueue(core_data->ts_workqueue);
+ 	core_data->initialized = 0;
+ 	core_module_prob_sate = CORE_MODULE_REMOVED;
+ 	if (atomic_read(&core_data->ts_esd.esd_on))
+diff --git a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.h b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.h
+index 90c1e7050..85adb6b86 100644
+--- a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.h
++++ b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.h
+@@ -477,13 +477,16 @@ struct goodix_ts_core {
+ #endif	
+ 	struct goodix_ts_esd ts_esd;
+ 	struct workqueue_struct *ts_workqueue;
+-	struct work_struct resume_work;
+-	struct work_struct suspend_work;
+ 	struct mutex call_back;
+ #if defined(CONFIG_DRM)
+ 	struct notifier_block drm_notifier;
++	struct work_struct display_state_work;
++	bool display_inactive;
++	bool panel_blanked;
+ #elif defined(CONFIG_FB)
+ 	struct notifier_block fb_notifier;
++	struct work_struct resume_work;
++	struct work_struct suspend_work;
+ #elif defined(CONFIG_HAS_EARLYSUSPEND)
+ 	struct early_suspend early_suspend;
+ #endif

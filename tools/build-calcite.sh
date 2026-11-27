@@ -56,11 +56,13 @@ if (( ${#patches[@]} == 0 )); then
     exit 1
 fi
 
-pending=()
+pending_projects=()
+pending_patches=()
 conflicts=0
 for patch in "${patches[@]}"; do
     project=${patch#"$patch_dir"/}
     project=${project%.patch}
+    update_patch=device/xiaomi/veux/patches/calcite-update/$project.patch
     if ! project_root=$(git -C "$project" rev-parse --show-toplevel 2>/dev/null) ||
             [[ "$project_root" != "$top/$project" ]]; then
         printf 'Missing source project: %s\n' "$project" >&2
@@ -69,7 +71,13 @@ for patch in "${patches[@]}"; do
         printf 'Already present: %s\n' "$project"
     elif details=$(git -C "$project" apply --whitespace=nowarn --check "$top/$patch" 2>&1); then
         printf 'Ready to apply: %s\n' "$project"
-        pending+=("$patch")
+        pending_projects+=("$project")
+        pending_patches+=("$patch")
+    elif [[ -f $update_patch ]] &&
+            git -C "$project" apply --whitespace=nowarn --check "$top/$update_patch" 2>/dev/null; then
+        printf 'Ready to update: %s\n' "$project"
+        pending_projects+=("$project")
+        pending_patches+=("$update_patch")
     else
         printf 'Cannot apply %s\n%s\n' "$patch" "$details" >&2
         conflicts=1
@@ -89,9 +97,9 @@ if [[ $mode == --check ]]; then
     exit 0
 fi
 
-for patch in "${pending[@]}"; do
-    project=${patch#"$patch_dir"/}
-    project=${project%.patch}
+for i in "${!pending_projects[@]}"; do
+    project=${pending_projects[i]}
+    patch=${pending_patches[i]}
     git -C "$project" apply --whitespace=nowarn "$top/$patch"
     printf 'Applied: %s\n' "$project"
 done
