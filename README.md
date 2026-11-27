@@ -85,6 +85,13 @@ ota_from_target_files -k "$sign/keys/releasekey" \
 
 The signed OTA is at `$run/aospa-veux-user-release.zip`.
 
+## Dolby
+
+Calcite uses the Dolby audio stack in `hardware/dolby` with the app in
+`packages/apps/LunarisDolby`. Dolby Vision is optional and defaults to disabled.
+Use `TARGET_INCLUDES_DolbyVision=true` only when bringing up a display that
+reports Dolby Vision support.
+
 ## Device specifications
 
 | Device           | Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 11 Pro+ 5G |

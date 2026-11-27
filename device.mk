@@ -145,9 +145,16 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/display/displayconfig.xml:$(TARGET_COPY_OUT_VENDOR)/etc/displayconfig/display_id_4630947081618265473.xml
 
 # Dolby
-$(call inherit-product, vendor/sony/dolby/sonydolby.mk)
-PRODUCT_PACKAGES += \
-        LunarisDolby
+$(call inherit-product, hardware/dolby/dolby.mk)
+# Keep the existing Lunaris app and the Lineage Codec2 HIDL shim.
+PRODUCT_SOURCE_ROOT_DIRS += \
+    -hardware/dolby/LunarisDolby \
+    -hardware/dolby/shim \
+    -vendor/sony/dolby
+ifneq ($(TARGET_INCLUDES_DolbyVision),true)
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/media_codecs_dolby_vision_disabled.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_dolby_vision.xml
+endif
 
 # DRM
 PRODUCT_PACKAGES += \

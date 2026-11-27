@@ -1,0 +1,157 @@
+diff --git a/LunarisDolby/src/org/lunaris/dolby/audio/DolbyAudioEffect.kt b/LunarisDolby/src/org/lunaris/dolby/audio/DolbyAudioEffect.kt
+index f8e23ab..c703277 100644
+--- a/LunarisDolby/src/org/lunaris/dolby/audio/DolbyAudioEffect.kt
++++ b/LunarisDolby/src/org/lunaris/dolby/audio/DolbyAudioEffect.kt
+@@ -18,7 +18,7 @@ class DolbyAudioEffect(priority: Int, audioSession: Int) : AudioEffect(
+         get() = getIntParam(EFFECT_PARAM_ENABLE) == 1
+         set(value) {
+             setIntParam(EFFECT_PARAM_ENABLE, if (value) 1 else 0)
+-            enabled = value
++            checkStatus(setEnabled(value))
+         }
+ 
+     var profile: Int
+diff --git a/LunarisDolby/src/org/lunaris/dolby/data/DolbyRepository.kt b/LunarisDolby/src/org/lunaris/dolby/data/DolbyRepository.kt
+index 1263e8e..e7e3219 100644
+--- a/LunarisDolby/src/org/lunaris/dolby/data/DolbyRepository.kt
++++ b/LunarisDolby/src/org/lunaris/dolby/data/DolbyRepository.kt
+@@ -10,6 +10,7 @@ import android.content.SharedPreferences
+ import android.media.AudioAttributes
+ import android.media.AudioDeviceInfo
+ import android.media.AudioManager
++import android.util.Log
+ import org.lunaris.dolby.DolbyConstants
+ import org.lunaris.dolby.DolbyConstants.DsParam
+ import org.lunaris.dolby.R
+@@ -22,7 +23,13 @@ import kotlinx.coroutines.flow.asStateFlow
+ class DolbyRepository(private val context: Context) : AutoCloseable {
+ 
+     private val audioManager = context.getSystemService(AudioManager::class.java)
+-    private var dolbyEffect = createDolbyEffect()
++    private val dolbyEffect: DolbyAudioEffect
++        get() = synchronized(effectLock) {
++            check(!isReleased) { "Dolby repository is closed" }
++            sharedEffect ?: DolbyAudioEffect(EFFECT_PRIORITY, audioSession = 0).also {
++                sharedEffect = it
++            }
++        }
+     
+     private val defaultPrefs = context.getSharedPreferences("dolby_prefs", Context.MODE_PRIVATE)
+     private val presetsPrefs = context.getSharedPreferences(DolbyConstants.PREF_FILE_PRESETS, Context.MODE_PRIVATE)
+@@ -36,35 +43,15 @@ class DolbyRepository(private val context: Context) : AutoCloseable {
+     val stereoWideningSupported = context.resources.getBoolean(R.bool.dolby_stereo_widening_supported)
+     val volumeLevelerSupported = context.resources.getBoolean(R.bool.dolby_volume_leveler_supported)
+     
+-    private var isReleased = false
++    @Volatile private var isReleased = false
+     
+     private var cachedPresets: List<EqualizerPreset>? = null
+     private val presetCacheLock = Any()
+ 
+-    private fun createDolbyEffect(): DolbyAudioEffect {
+-        return try {
+-            DolbyAudioEffect(EFFECT_PRIORITY, audioSession = 0)
+-        } catch (e: Exception) {
+-            DolbyConstants.dlog(TAG, "Failed to create Dolby effect: ${e.message}")
+-            throw e
+-        }
+-    }
+-
+     private fun checkEffect() {
+-        if (isReleased) {
+-            DolbyConstants.dlog(TAG, "Repository released, skipping effect check")
+-            return
+-        }
+-        
+-        try {
+-            if (!dolbyEffect.hasControl()) {
+-                DolbyConstants.dlog(TAG, "Lost audio effect control, recreating")
+-                dolbyEffect.release()
+-                dolbyEffect = createDolbyEffect()
+-                restoreSavedProfileIfNeeded()
+-            }
+-        } catch (e: Exception) {
+-            DolbyConstants.dlog(TAG, "Error checking effect: ${e.message}")
++        synchronized(effectLock) {
++            // Repositories in the service, tile and UI share one global effect handle.
++            check(dolbyEffect.hasControl()) { "Dolby effect control is unavailable" }
+         }
+     }
+ 
+@@ -121,11 +108,18 @@ class DolbyRepository(private val context: Context) : AutoCloseable {
+     }
+ 
+     fun applySavedState() {
+-    checkEffect()
+-        val enabled = defaultPrefs.getBoolean(DolbyConstants.PREF_ENABLE, false)
+-        dolbyEffect.dsOn = enabled
+-        if (enabled) {
+-            restoreSavedProfileIfNeeded()
++        synchronized(effectLock) {
++            if (isReleased) return
++            try {
++                checkEffect()
++                val enabled = defaultPrefs.getBoolean(DolbyConstants.PREF_ENABLE, false)
++                if (dolbyEffect.dsOn != enabled || dolbyEffect.enabled != enabled) {
++                    dolbyEffect.dsOn = enabled
++                }
++                if (enabled) restoreSavedProfileIfNeeded()
++            } catch (e: RuntimeException) {
++                Log.w(TAG, "Unable to restore Dolby state", e)
++            }
+         }
+     }
+ 
+@@ -155,14 +149,15 @@ class DolbyRepository(private val context: Context) : AutoCloseable {
+     }
+ 
+     fun setDolbyEnabled(enabled: Boolean) {
+-        if (isReleased) return
+-        
+-        try {
+-            checkEffect()
+-            dolbyEffect.dsOn = enabled
+-            defaultPrefs.edit().putBoolean(DolbyConstants.PREF_ENABLE, enabled).apply()
+-        } catch (e: Exception) {
+-            DolbyConstants.dlog(TAG, "Error setting Dolby enabled: ${e.message}")
++        synchronized(effectLock) {
++            if (isReleased) return
++            try {
++                checkEffect()
++                dolbyEffect.dsOn = enabled
++                defaultPrefs.edit().putBoolean(DolbyConstants.PREF_ENABLE, enabled).apply()
++            } catch (e: RuntimeException) {
++                Log.w(TAG, "Unable to change Dolby state", e)
++            }
+         }
+     }
+ 
+@@ -893,23 +888,16 @@ class DolbyRepository(private val context: Context) : AutoCloseable {
+         }
+     }
+     
+-    private fun release() {
+-        if (!isReleased) {
+-            DolbyConstants.dlog(TAG, "Releasing repository resources")
++    override fun close() {
++        synchronized(effectLock) {
++            // The effect stays active for the app process and other repositories.
+             isReleased = true
+-            try {
+-                dolbyEffect.release()
+-            } catch (e: Exception) {
+-                DolbyConstants.dlog(TAG, "Error releasing effect: ${e.message}")
+-            }
+         }
+     }
+-    
+-    override fun close() {
+-        release()
+-    }
+ 
+     companion object {
++        private val effectLock = Any()
++        private var sharedEffect: DolbyAudioEffect? = null
+         private const val TAG = "DolbyRepository"
+         private const val EFFECT_PRIORITY = 100
+         
