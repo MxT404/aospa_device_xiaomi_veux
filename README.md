@@ -1,5 +1,11 @@
 Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 11 Pro+ 5G were announced and released in February 2022.
 
+## Credits
+
+- [acerhizmq](https://github.com/acerhizmq) for the veux device tree and kernel.
+- The RisingOS team for its work on the veux base.
+- [dereference23](https://github.com/dereference23) for the base device tree.
+
 ## Building AOSPA Calcite
 
 Initialize AOSPA Calcite and install the local manifests for this branch.
