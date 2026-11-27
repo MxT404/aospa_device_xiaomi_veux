@@ -14,8 +14,8 @@
   <project path="device/lineage/sepolicy" name="MxT404/android_device_lineage_sepolicy" remote="github" revision="dbf2ed7498761fbe4313875ba47a70418703e94d" upstream="refs/heads/lineage-24.0" />
   <project path="hardware/google/pixel" name="MxT404/android_hardware_google_pixel" remote="github" revision="lineage-24.0" />
   <project path="hardware/lineage/interfaces" name="MxT404/android_hardware_lineage_interfaces" remote="github" revision="lineage-24.0" />
-  <project path="hardware/qcom-caf/common" name="LineageOS/android_hardware_qcom-caf_common" remote="github" revision="4c13a7e651086fc4332a609cff64d2af3d4e60fd" upstream="refs/heads/lineage-24.0">
+  <project path="hardware/qcom-caf/common" name="MxT404/android_hardware_qcom-caf_common" remote="github" revision="412def46de87169681b27352bfab22d0b849e8dd" upstream="refs/heads/veux-calcite">
     <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8350/Android.bp" />
   </project>
-  <project path="vendor/qcom/opensource/display" name="LineageOS/android_vendor_qcom_opensource_display" remote="github" revision="74a5c56b6229dbe518b43cf781e4c52e1a5ecb71" upstream="refs/heads/lineage-24.0" />
+  <project path="vendor/qcom/opensource/display" name="MxT404/android_vendor_qcom_opensource_display" remote="github" revision="7ca9df82644e3f5e99839e49b183fca49c5be507" upstream="refs/heads/veux-calcite" />
 </manifest>
