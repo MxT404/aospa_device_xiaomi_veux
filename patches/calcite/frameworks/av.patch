@@ -1,0 +1,165 @@
+diff --git a/services/camera/libcameraservice/Android.bp b/services/camera/libcameraservice/Android.bp
+index 48aa4ed6d4a69d909b0c6ca3d92ccce8ea7c006c..9ffc9255cd372ff94bb7bea376615baabddbb754 100644
+--- a/services/camera/libcameraservice/Android.bp
++++ b/services/camera/libcameraservice/Android.bp
+@@ -238,6 +238,11 @@ cc_library {
+ 
+     export_include_dirs: ["."],
+ 
++    whole_static_libs: select(soong_config_variable("libcameraservice", "ext_lib"), {
++        any @ extension: [extension],
++        default: [],
++    }),
++
+     cflags: [
+         "-Wall",
+         "-Wextra",
+@@ -246,6 +251,9 @@ cc_library {
+     ] + select(soong_config_variable("camera", "package_name"), {
+         any @ flag_val: ["-DCAMERA_PACKAGE_NAME=\"" + flag_val + "\""],
+         default: [],
++    }) + select(soong_config_variable("libcameraservice", "ext_lib"), {
++        any: ["-DUSE_CAMERA_PROVIDER_EXTENSION"],
++        default: [],
+     }),
+ }
+ 
+diff --git a/services/camera/libcameraservice/common/hidl/HidlProviderInfo.cpp b/services/camera/libcameraservice/common/hidl/HidlProviderInfo.cpp
+index 790c580154a583430f648e3a0d37f0acbc1a1b88..8deb9061a6b7587a1df1b713859ad0a2bd8fd825 100644
+--- a/services/camera/libcameraservice/common/hidl/HidlProviderInfo.cpp
++++ b/services/camera/libcameraservice/common/hidl/HidlProviderInfo.cpp
+@@ -30,6 +30,10 @@
+ 
+ #include <android/hardware/camera/device/3.7/ICameraDevice.h>
+ 
++#ifdef USE_CAMERA_PROVIDER_EXTENSION
++#include "CameraProviderExtension.h"
++#endif
++
+ namespace {
+ const bool kEnableLazyHal(property_get_bool("ro.camera.enableLazyHal", false));
+ } // anonymous namespace
+@@ -716,6 +720,18 @@ HidlProviderInfo::HidlDeviceInfo3::HidlDeviceInfo3(
+                     "ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL tags: %s (%d)", __FUNCTION__,
+                     strerror(-res), res);
+         }
++#ifdef USE_CAMERA_PROVIDER_EXTENSION
++        if (supportsTorchStrengthControlExt(mId)) {
++            CameraMetadata characteristics(mCameraCharacteristics);
++            const int32_t stockLevel = getTorchMaxStrengthLevelExt();
++            if (characteristics.update(ANDROID_FLASH_INFO_STRENGTH_DEFAULT_LEVEL,
++                        &stockLevel, 1) == OK &&
++                    characteristics.update(ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL,
++                        &stockLevel, 1) == OK) {
++                mCameraCharacteristics = std::move(characteristics);
++            }
++        }
++#endif
+     } else {
+         mHasFlashUnit = false;
+     }
+@@ -836,17 +852,57 @@ HidlProviderInfo::HidlDeviceInfo3::HidlDeviceInfo3(
+ status_t HidlProviderInfo::HidlDeviceInfo3::setTorchMode(bool enabled) {
+     using hardware::camera::common::V1_0::TorchMode;
+     const sp<hardware::camera::device::V3_2::ICameraDevice> interface = startDeviceInterface();
+-    Status s = interface->setTorchMode(enabled ? TorchMode::ON : TorchMode::OFF);
+-    return mapToStatusT(s);
++    if (interface == nullptr) {
++        return DEAD_OBJECT;
++    }
++    const auto result = interface->setTorchMode(enabled ? TorchMode::ON : TorchMode::OFF);
++    if (!result.isOk()) {
++        return DEAD_OBJECT;
++    }
++    const status_t status = mapToStatusT(result);
++#ifdef USE_CAMERA_PROVIDER_EXTENSION
++    if (status == OK && !enabled) {
++        mTorchStrengthLevel = 0;
++    }
++#endif
++    return status;
+ }
+ 
+ status_t HidlProviderInfo::HidlDeviceInfo3::turnOnTorchWithStrengthLevel(
+-        int32_t /*torchStrengthLevel*/) {
++        [[maybe_unused]] int32_t torchStrengthLevel) {
++#ifdef USE_CAMERA_PROVIDER_EXTENSION
++    if (mTorchMaximumStrengthLevel > 1 && supportsTorchStrengthControlExt(mId)) {
++        if (torchStrengthLevel < 1 || torchStrengthLevel > mTorchMaximumStrengthLevel) {
++            return BAD_VALUE;
++        }
++        const status_t status = setTorchMode(true);
++        if (status != OK) {
++            return status;
++        }
++        const status_t strengthStatus = setTorchStrengthLevelExt(torchStrengthLevel);
++        if (strengthStatus != OK) {
++            setTorchMode(false);
++            return strengthStatus;
++        }
++        mTorchStrengthLevel = torchStrengthLevel;
++        return OK;
++    }
++#endif
+     ALOGE("%s HIDL does not support turning on torch with variable strength", __FUNCTION__);
+     return INVALID_OPERATION;
+ }
+ 
+-status_t HidlProviderInfo::HidlDeviceInfo3::getTorchStrengthLevel(int32_t * /*torchStrength*/) {
++status_t HidlProviderInfo::HidlDeviceInfo3::getTorchStrengthLevel(
++        [[maybe_unused]] int32_t* torchStrength) {
++#ifdef USE_CAMERA_PROVIDER_EXTENSION
++    if (torchStrength == nullptr) {
++        return BAD_VALUE;
++    }
++    if (mTorchMaximumStrengthLevel > 1 && supportsTorchStrengthControlExt(mId)) {
++        *torchStrength = mTorchStrengthLevel == 0 ? mTorchDefaultStrengthLevel : mTorchStrengthLevel;
++        return OK;
++    }
++#endif
+     ALOGE("%s HIDL does not support variable torch strength level", __FUNCTION__);
+     return INVALID_OPERATION;
+ }
+diff --git a/services/camera/libcameraservice/device3/Camera3Device.cpp b/services/camera/libcameraservice/device3/Camera3Device.cpp
+index f957f92fa1648cdb4abd19d04cacc5939299f0cb..4f38fefeb0a97d12ea7d3efc8baa75a6d9a19add 100644
+--- a/services/camera/libcameraservice/device3/Camera3Device.cpp
++++ b/services/camera/libcameraservice/device3/Camera3Device.cpp
+@@ -2634,6 +2634,10 @@ status_t Camera3Device::configureStreamsLocked(int operatingMode,
+     }
+ 
+ #ifdef CAMERA_PACKAGE_NAME
++    // Keep the HAL-only client tag out of the request thread's session baseline.
++    // Requests do not carry this tag, so tracking it would cause a reconfiguration
++    // whenever the request thread sees it disappear.
++    CameraMetadata halSessionParams(sessionParams);
+     sp<VendorTagDescriptor> vTags;
+     sp<VendorTagDescriptorCache> vCache = VendorTagDescriptorCache::getGlobalVendorTagCache();
+     if (vCache.get()) {
+@@ -2646,12 +2650,14 @@ status_t Camera3Device::configureStreamsLocked(int operatingMode,
+             ALOGE("%s: Unable to get %s tag", __FUNCTION__, CAMERA_PACKAGE_NAME);
+         } else {
+             std::string pkgName = CameraService::getCurrPackageName();
+-            status_t res = const_cast<CameraMetadata&>(sessionParams).update(tag, String8(pkgName.c_str()));
++            status_t res = halSessionParams.update(tag, String8(pkgName.c_str()));
+             if (res) {
+                 ALOGE("%s: metadata update failed, res = %d", __FUNCTION__, res);
+             }
+         }
+     }
++#else
++    const CameraMetadata& halSessionParams = sessionParams;
+ #endif
+ 
+     bool isConstrainedHighSpeed =
+@@ -2805,9 +2811,9 @@ status_t Camera3Device::configureStreamsLocked(int operatingMode,
+     // is not enabled but the HAL supports session specific hal buffer manager).
+ 
+     int64_t logId = mCameraServiceProxyWrapper->getCurrentLogIdForCamera(mId);
+-    const camera_metadata_t *sessionBuffer = sessionParams.getAndLock();
++    const camera_metadata_t *sessionBuffer = halSessionParams.getAndLock();
+     res = mInterface->configureStreams(sessionBuffer, &config, bufferSizes, logId);
+-    sessionParams.unlock(sessionBuffer);
++    halSessionParams.unlock(sessionBuffer);
+ 
+     if (res == BAD_VALUE) {
+         // HAL rejected this set of streams as unsupported, clean up config

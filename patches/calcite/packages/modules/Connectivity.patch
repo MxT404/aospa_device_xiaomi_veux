@@ -1,0 +1,94 @@
+diff --git a/Tethering/common/TetheringLib/src/android/net/TetheringManager.java b/Tethering/common/TetheringLib/src/android/net/TetheringManager.java
+index 65a0e4e1072ce7feef986478f3a805e0c0b7e8b7..c40545b0f9f4ac8fb1bfc0557c1d42c10336af7b 100644
+--- a/Tethering/common/TetheringLib/src/android/net/TetheringManager.java
++++ b/Tethering/common/TetheringLib/src/android/net/TetheringManager.java
+@@ -2067,7 +2067,8 @@ public class TetheringManager {
+     @SystemApi(client = MODULE_LIBRARIES)
+     public @NonNull String[] getTetherableUsbRegexs() {
+         mCallback.waitForStarted();
+-        return mTetheringConfiguration.tetherableUsbRegexs;
++        final TetheringConfigurationParcel config = mTetheringConfiguration;
++        return config == null ? new String[0] : config.tetherableUsbRegexs;
+     }
+ 
+     /**
+@@ -2082,7 +2083,8 @@ public class TetheringManager {
+     @SystemApi(client = MODULE_LIBRARIES)
+     public @NonNull String[] getTetherableWifiRegexs() {
+         mCallback.waitForStarted();
+-        return mTetheringConfiguration.tetherableWifiRegexs;
++        final TetheringConfigurationParcel config = mTetheringConfiguration;
++        return config == null ? new String[0] : config.tetherableWifiRegexs;
+     }
+ 
+     /**
+@@ -2097,7 +2099,8 @@ public class TetheringManager {
+     @SystemApi(client = MODULE_LIBRARIES)
+     public @NonNull String[] getTetherableBluetoothRegexs() {
+         mCallback.waitForStarted();
+-        return mTetheringConfiguration.tetherableBluetoothRegexs;
++        final TetheringConfigurationParcel config = mTetheringConfiguration;
++        return config == null ? new String[0] : config.tetherableBluetoothRegexs;
+     }
+ 
+     /**
+@@ -2158,7 +2161,8 @@ public class TetheringManager {
+     @Deprecated
+     public @NonNull String[] getTetheredDhcpRanges() {
+         mCallback.waitForStarted();
+-        return mTetheringConfiguration.legacyDhcpRanges;
++        final TetheringConfigurationParcel config = mTetheringConfiguration;
++        return config == null ? new String[0] : config.legacyDhcpRanges;
+     }
+ 
+     /**
+diff --git a/Tethering/src/com/android/networkstack/tethering/OffloadHalHidlImpl.java b/Tethering/src/com/android/networkstack/tethering/OffloadHalHidlImpl.java
+index 71922f9ce4495aee6f8b830563054246e66dcfc2..6ca01664b48520e649141caf2f02dfe020d90203 100644
+--- a/Tethering/src/com/android/networkstack/tethering/OffloadHalHidlImpl.java
++++ b/Tethering/src/com/android/networkstack/tethering/OffloadHalHidlImpl.java
+@@ -282,9 +282,10 @@ public class OffloadHalHidlImpl implements IOffloadHal {
+      * @param log Log to be used by the repository.
+      */
+     public static IOffloadHal getIOffloadHal(Handler handler, SharedLog log) {
+-        IOffloadConfig config = null;
++        final IOffloadConfig config;
+         try {
+-            config = IOffloadConfig.getService(true /*retry*/);
++            // Hardware offload is optional. Never block tethering's handler on a missing HAL.
++            config = IOffloadConfig.getService(false /* retry */);
+         } catch (RemoteException e) {
+             log.e("getIOffloadConfig error " + e);
+             return null;
+@@ -292,12 +293,13 @@ public class OffloadHalHidlImpl implements IOffloadHal {
+             log.i("getIOffloadConfig Tether Offload HAL not present/implemented");
+             return null;
+         }
++        if (config == null) return null;
+ 
+         IOffloadControl control = null;
+         int version = OFFLOAD_HAL_VERSION_NONE;
+         try {
+             control = android.hardware.tetheroffload.control
+-                    .V1_1.IOffloadControl.getService(true /*retry*/);
++                    .V1_1.IOffloadControl.getService(false /* retry */);
+             version = OFFLOAD_HAL_VERSION_HIDL_1_1;
+         } catch (NoSuchElementException e) {
+             // Unsupported by device.
+@@ -306,7 +308,7 @@ public class OffloadHalHidlImpl implements IOffloadHal {
+         }
+         if (control == null) {
+             try {
+-                control = IOffloadControl.getService(true /*retry*/);
++                control = IOffloadControl.getService(false /* retry */);
+                 version = OFFLOAD_HAL_VERSION_HIDL_1_0;
+             } catch (NoSuchElementException e) {
+                 // Unsupported by device.
+@@ -315,7 +317,7 @@ public class OffloadHalHidlImpl implements IOffloadHal {
+             }
+         }
+ 
+-        if (config == null || control == null) return null;
++        if (control == null) return null;
+ 
+         return new OffloadHalHidlImpl(version, config, control, handler, log);
+     }

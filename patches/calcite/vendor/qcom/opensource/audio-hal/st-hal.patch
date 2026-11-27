@@ -1,0 +1,13 @@
+diff --git a/Android.mk b/Android.mk
+index 8b2e2568c1206bf5bf77b379d9997804725fe171..de925bb2f9fcad6d847260b4da2f0e007a3bc62c 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -77,7 +77,7 @@ endif
+ 
+ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/graphite-client/gcs
+ LOCAL_C_INCLUDES += $(TARGET_OUT_HEADERS)/mm-audio/graphite-client/osal
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 

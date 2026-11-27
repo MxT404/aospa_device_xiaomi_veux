@@ -1,0 +1,44 @@
+diff --git a/miuicamera.mk b/miuicamera.mk
+index 4b09f48bc4f622f34f48e73e49b244f448e6037f..eabb1f6da14bc0052096b0ac4da6195dfe9dff89 100644
+--- a/miuicamera.mk
++++ b/miuicamera.mk
+@@ -103,7 +103,6 @@ PRODUCT_PACKAGES += \
+ 
+ # Camera Properties (aligned with tested veux/peux vendor.prop)
+ PRODUCT_VENDOR_PROPERTIES += \
+-    camera.force_snaps_on_shutter_denoise=false \
+     vendor.camera.aux.packagelist=org.codeaurora.snapcam,com.android.camera,com.xiaomi.camera \
+     persist.camera.aux.packagelist=org.codeaurora.snapcam,com.android.camera,com.xiaomi.camera \
+     persist.vendor.camera.privapp.list=com.android.camera,org.codeaurora.snapcam,com.shamim.cam \
+@@ -111,6 +110,9 @@ PRODUCT_VENDOR_PROPERTIES += \
+     vendor.camera.lowpower.record.enable=0 \
+     persist.vendor.camera.logInfoMask=false
+ 
++PRODUCT_SYSTEM_EXT_PROPERTIES += \
++    camera.force_snaps_on_shutter_denoise=false
++
+ PRODUCT_SYSTEM_PROPERTIES += \
+     ro.com.google.lens.oem_camera_package=com.android.camera \
+     ro.vendor.display.type=oled \
+diff --git a/rro_overlays/MiuiCameraOverlay/res/values/config.xml b/rro_overlays/MiuiCameraOverlay/res/values/config.xml
+index ef544ac34b54bc184fd6d06a9028b06ce8793f9a..b504e0678a6a72393a4f9753e31353a248e58581 100644
+--- a/rro_overlays/MiuiCameraOverlay/res/values/config.xml
++++ b/rro_overlays/MiuiCameraOverlay/res/values/config.xml
+@@ -1,14 +1,11 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ 
+-<!-- Leica Camera Overlay Configuration for Poco F3 -->
++<!-- Leica Camera defaults for veux and peux -->
+ 
+ <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+ 
+-   <!-- enable to use Parallel processing and it's features in Photo modes with Rear cameras,
+-        main features are Leica/Film filters, AI Watermark, Supermoon, Leica/Redmi watermarks
+-        Parallel processing is usually broken on AOSP and MIUI/HyperOS ports, 
+-        on AOSP it may be fixed by including some libs, also heavily depends on Device Tree and ROM sources -->
+-   <bool name="pref_camera_parallel_process_enable_default">true</bool>
++   <!-- Rear Photo mode needs the standard JPEG stream sizes on the veux HAL. -->
++   <bool name="pref_camera_parallel_process_enable_default">false</bool>
+ 
+    <!-- Portrait Mode -->
+    <!-- Disable Portrait Fix by default -->

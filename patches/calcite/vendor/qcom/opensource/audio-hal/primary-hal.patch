@@ -1,0 +1,401 @@
+diff --git a/hal/Android.mk b/hal/Android.mk
+index d3073ffce36e58c21377f48cf4a903b670bfdae6..aaaf220a15e52bc333c8ed167dee9a39d6a58211 100644
+--- a/hal/Android.mk
++++ b/hal/Android.mk
+@@ -218,7 +218,7 @@ else
+   LOCAL_C_INCLUDES += vendor/qcom/opensource/core-utils/fwk-detect
+ endif # BOARD_OPENSOURCE_DIR
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -311,7 +311,7 @@ endif
+ 
+ # Hardware specific feature
+ ifeq ($(TARGET_COMPILE_WITH_MSM_KERNEL),true)
+-        LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++        LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+         LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+         LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/hal/audio_extn/Android.mk b/hal/audio_extn/Android.mk
+index 6126e718a8bd62059152523f814857f90431146e..186d945984bb59275cb55d94b739f9f9ea4a4fe7 100644
+--- a/hal/audio_extn/Android.mk
++++ b/hal/audio_extn/Android.mk
+@@ -30,6 +30,7 @@ endif
+ #--------------------------------------------
+ LOCAL_PATH:= $(call my-dir)
+ 
++ifeq ($(filter libsndmonitor,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libsndmonitor
+@@ -66,7 +67,7 @@ LOCAL_C_INCLUDES := \
+     $(PRIMARY_HAL_PATH) \
+     $(call include-path-for, audio-effects)
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -93,10 +94,12 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #--------------------------------------------
+ #          Build COMPRESS_CAPTURE LIB
+ #--------------------------------------------
++ifeq ($(filter libcomprcapture,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libcomprcapture
+@@ -140,7 +143,7 @@ LOCAL_C_INCLUDES := \
+     $(PRIMARY_HAL_PATH)/$(AUDIO_PLATFORM) \
+     $(call include-path-for, audio-effects)
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -162,6 +165,7 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #-------------------------------------------
+ #            Build SSREC LIB
+@@ -220,7 +224,7 @@ ifeq ($(ENABLE_AUDIO_LEGACY_TECHPACK),true)
+ LOCAL_HEADER_LIBRARIES += qti_legacy_audio_kernel_uapi
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -246,6 +250,7 @@ endif
+ #--------------------------------------------
+ #          Build HDMI_EDID LIB
+ #--------------------------------------------
++ifeq ($(filter libhdmiedid,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libhdmiedid
+@@ -288,7 +293,7 @@ LOCAL_C_INCLUDES := \
+     $(PRIMARY_HAL_PATH)/$(AUDIO_PLATFORM) \
+     $(call include-path-for, audio-effects)
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -315,10 +320,12 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #--------------------------------------------
+ #          Build SPKR_PROTECT LIB
+ #--------------------------------------------
++ifeq ($(filter libspkrprot,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ ifneq ($(filter sdm845 sdm710 sdmshrike msmnile gen4 kona lahaina holi lito bengal atoll sdm660 msm8937 msm8953 msm8998 $(MSMSTEPPE) $(TRINKET),$(TARGET_BOARD_PLATFORM)),)
+@@ -367,7 +374,7 @@ else
+    LOCAL_C_INCLUDES += vendor/qcom/opensource/audio-kernel/include/uapi/
+ endif # BOARD_OPENSOURCE_DIR
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -389,6 +396,7 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ #====================================================================================================
+ # --- enable 3rd Party Spkr-prot lib
+ #====================================================================================================
+@@ -442,7 +450,7 @@ else
+ endif # BOARD_OPENSOURCE_DIR
+ 
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -462,6 +470,7 @@ include $(BUILD_SHARED_LIBRARY)
+ #-------------------------------------------
+ #            Build A2DP_OFFLOAD LIB
+ #-------------------------------------------
++ifeq ($(filter liba2dpoffload,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := liba2dpoffload
+@@ -504,7 +513,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -531,11 +540,13 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #-------------------------------------------
+ 
+ #            Build EXT_HW_PLUGIN LIB
+ #-------------------------------------------
++ifeq ($(filter libexthwplugin,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libexthwplugin
+@@ -582,7 +593,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -603,10 +614,12 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #-------------------------------------------
+ #            Build HFP LIB
+ #-------------------------------------------
++ifeq ($(filter libhfp,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libhfp
+@@ -653,7 +666,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -680,6 +693,7 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #-------------------------------------------
+ #            Build ICC LIB
+@@ -730,7 +744,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -801,7 +815,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -828,6 +842,7 @@ include $(BUILD_SHARED_LIBRARY)
+ #-------------------------------------------
+ ifneq ($(QCPATH),)
+ 
++ifeq ($(filter libhdmipassthru,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libhdmipassthru
+@@ -873,7 +888,7 @@ LOCAL_C_INCLUDES := \
+     $(TARGET_OUT_HEADERS)/mm-audio/audio-parsers \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -905,12 +920,14 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ endif
+ 
+ #-------------------------------------------
+ #            Build BATTERY_LISTENER
+ #-------------------------------------------
++ifeq ($(filter libbatterylistener,$(TARGET_PREBUILT_AUDIO_EXTENSIONS)),)
+ include $(CLEAR_VARS)
+ 
+ LOCAL_MODULE := libbatterylistener
+@@ -963,7 +980,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -979,6 +996,7 @@ ifneq ($(filter kona lahaina holi,$(TARGET_BOARD_PLATFORM)),)
+ LOCAL_SANITIZE := integer_overflow
+ endif
+ include $(BUILD_SHARED_LIBRARY)
++endif
+ 
+ #-------------------------------------------
+ #            Build HWDEP_CAL
+@@ -1024,7 +1042,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+@@ -1086,7 +1104,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -1152,7 +1170,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+@@ -1220,7 +1238,7 @@ LOCAL_C_INCLUDES := \
+     system/media/audio_utils/include \
+     $(call include-path-for, audio-route) \
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ 
+diff --git a/mm-audio/aenc-aac/qdsp6/Android.mk b/mm-audio/aenc-aac/qdsp6/Android.mk
+index d8bcf05af7c1258d6ca05dee013c03490890a951..b9e74f900c9b54edd48d7f05cfd269350cf1db85 100644
+--- a/mm-audio/aenc-aac/qdsp6/Android.mk
++++ b/mm-audio/aenc-aac/qdsp6/Android.mk
+@@ -42,7 +42,7 @@ LOCAL_CPPFLAGS += --coverage -fprofile-arcs -ftest-coverage
+ LOCAL_STATIC_LIBRARIES += libprofile_rt
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/mm-audio/aenc-amrnb/qdsp6/Android.mk b/mm-audio/aenc-amrnb/qdsp6/Android.mk
+index 648d93244cf4e5de44ccfbf269dfe431c7cfeba6..1231534a850f8857a9dd781bfc7a836d449adb8f 100644
+--- a/mm-audio/aenc-amrnb/qdsp6/Android.mk
++++ b/mm-audio/aenc-amrnb/qdsp6/Android.mk
+@@ -44,7 +44,7 @@ LOCAL_CPPFLAGS += --coverage -fprofile-arcs -ftest-coverage
+ LOCAL_STATIC_LIBRARIES += libprofile_rt
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/mm-audio/aenc-evrc/qdsp6/Android.mk b/mm-audio/aenc-evrc/qdsp6/Android.mk
+index 5022ea15513daff0ca4b7e8b2d3ca7946d60b164..9e4557f1b096cd9893bc00701eff1d3ed0ea3cca 100644
+--- a/mm-audio/aenc-evrc/qdsp6/Android.mk
++++ b/mm-audio/aenc-evrc/qdsp6/Android.mk
+@@ -44,7 +44,7 @@ LOCAL_CPPFLAGS += --coverage -fprofile-arcs -ftest-coverage
+ LOCAL_STATIC_LIBRARIES += libprofile_rt
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/mm-audio/aenc-g711/qdsp6/Android.mk b/mm-audio/aenc-g711/qdsp6/Android.mk
+index 7b232216282a9c893e9b7d6abe863bcfd87f485a..f49f0f3a9e1b174730d7cad6fad07ffba7fac755 100644
+--- a/mm-audio/aenc-g711/qdsp6/Android.mk
++++ b/mm-audio/aenc-g711/qdsp6/Android.mk
+@@ -45,7 +45,7 @@ LOCAL_CPPFLAGS += --coverage -fprofile-arcs -ftest-coverage
+ LOCAL_STATIC_LIBRARIES += libprofile_rt
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/mm-audio/aenc-qcelp13/qdsp6/Android.mk b/mm-audio/aenc-qcelp13/qdsp6/Android.mk
+index 8b7ee03fecaafb966e5a790ff295e190f06df02d..c9f2ce5bd735608c2e368199d6f9fa15dbc0ccfd 100644
+--- a/mm-audio/aenc-qcelp13/qdsp6/Android.mk
++++ b/mm-audio/aenc-qcelp13/qdsp6/Android.mk
+@@ -44,7 +44,7 @@ LOCAL_CPPFLAGS += --coverage -fprofile-arcs -ftest-coverage
+ LOCAL_STATIC_LIBRARIES += libprofile_rt
+ endif
+ 
+-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio
+ LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+diff --git a/post_proc/Android.mk b/post_proc/Android.mk
+index c8fa3a2c93eb97ac84dd88242e942fae402cb022..940e7c9c6c74b5179b357f55bd9ba2297acb2a3a 100644
+--- a/post_proc/Android.mk
++++ b/post_proc/Android.mk
+@@ -86,9 +86,9 @@ LOCAL_MODULE_OWNER := qti
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+ 
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES := \
+         external/tinyalsa/include \
+-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+         $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio \
+         $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include \
+         $(call include-path-for, audio-effects)
+@@ -219,8 +219,8 @@ LOCAL_MODULE_OWNER := qti
+ 
+ LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+ 
++LOCAL_CFLAGS += -idirafter $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ LOCAL_C_INCLUDES := \
+-        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+         $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include/audio \
+         $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/techpack/audio/include \
+         external/tinyalsa/include \

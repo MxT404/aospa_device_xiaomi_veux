@@ -1,5 +1,27 @@
 Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 11 Pro+ 5G were announced and released in February 2022.
 
+## Building AOSPA Calcite
+
+Sync the AOSPA `calcite` checkout with the veux local manifests, then run the
+device build script from the checkout root.
+
+```bash
+device/xiaomi/veux/tools/build-calcite.sh -t userdebug -j24
+```
+
+The script applies [the Calcite patches](patches/calcite) and the MIUI Camera
+lens-switch fix before invoking `rom-build.sh`. It checks each project and the
+camera APK first and skips patches already applied.
+If a source revision conflicts, the script reports the affected project before
+writing any patches. Run `repo sync` separately before running the script.
+
+Use `--check` to preview the patch status or `--apply-only` to prepare the tree
+for a manual `lunch` and `m` build. When the environment loads this device's
+`vendorsetup.sh`, `veux_build` invokes the same script.
+
+Device configuration and patches are portable across build machines. Remote
+build execution uses the configuration of the machine running the build.
+
 ## Device specifications
 
 | Device           | Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 11 Pro+ 5G |

@@ -1,0 +1,41 @@
+diff --git a/bluetooth/audio/aidl/default/Android.bp b/bluetooth/audio/aidl/default/Android.bp
+index 38b929b598d8753a9111ffa89bdb3e1f24a090fd..9a70cc42df7b3afd13771773f714f21ed0a935f5 100644
+--- a/bluetooth/audio/aidl/default/Android.bp
++++ b/bluetooth/audio/aidl/default/Android.bp
+@@ -11,6 +11,10 @@ cc_library_shared {
+     name: "android.hardware.bluetooth.audio-impl",
+     vendor: true,
+     vintf_fragments: ["bluetooth_audio.xml"],
++    cflags: select(soong_config_variable("veux", "use_aosp_bluetooth_audio"), {
++        true: ["-DUSE_AOSP_BLUETOOTH_AUDIO_FACTORY"],
++        default: [],
++    }),
+     defaults: [
+         "aconfig_lib_cc_static_link.defaults",
+         "latest_android_hardware_bluetooth_audio_ndk_shared",
+diff --git a/bluetooth/audio/aidl/default/service.cpp b/bluetooth/audio/aidl/default/service.cpp
+index e97bfcab98b1b2100fb0de9ef336fa9dca325df9..3a4015a981f1b2079247210734034f9c6e771b78 100644
+--- a/bluetooth/audio/aidl/default/service.cpp
++++ b/bluetooth/audio/aidl/default/service.cpp
+@@ -26,9 +26,10 @@ using ::aidl::android::hardware::bluetooth::audio::BluetoothAudioProviderFactory
+ 
+ extern "C" __attribute__((visibility("default"))) binder_status_t
+ createIBluetoothAudioProviderFactory() {
+-    binder_status_t aidl_status_war = STATUS_UNKNOWN_ERROR;
+-    ALOGW_IF(aidl_status_war == STATUS_OK, "Could not register AOSP HAL, status=%d", aidl_status_war);
+-    return aidl_status_war;
++#ifndef USE_AOSP_BLUETOOTH_AUDIO_FACTORY
++    // Platforms with a Qualcomm AIDL factory register it separately.
++    return STATUS_UNKNOWN_ERROR;
++#else
+     auto factory = ::ndk::SharedRefBase::make<BluetoothAudioProviderFactory>();
+     const std::string instance_name =
+             std::string() + BluetoothAudioProviderFactory::descriptor + "/default";
+@@ -37,6 +38,5 @@ createIBluetoothAudioProviderFactory() {
+     ALOGW_IF(aidl_status != STATUS_OK, "Could not register %s, status=%d", instance_name.c_str(),
+              aidl_status);
+     return aidl_status;
+-// QTI_BEGIN: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration
++#endif
+ }
+-// QTI_END: 2024-02-08: Bluetooth: BT: Reject AOSP HAL-Interface registration

@@ -1,0 +1,10 @@
+diff --git a/Android.bp b/Android.bp
+index ad6d5eb9a2a8c577758a988cbc5192390db4b85b..9515b25732000716036b754fa6b2a23444c3d9a3 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -1,5 +1,2 @@
+ soong_namespace {
+-    imports: [
+-        "vendor/qcom/opensource/commonsys-intf/display"
+-    ],
+ }

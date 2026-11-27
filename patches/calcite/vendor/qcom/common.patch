@@ -1,0 +1,12 @@
+diff --git a/vendor/gps-legacy/Android.bp b/vendor/gps-legacy/Android.bp
+index 39fc75e996087f6d55c417eed1b4061984c37c67..8455241dc0c03edf03a65e1efb5588c8f12048ad 100644
+--- a/vendor/gps-legacy/Android.bp
++++ b/vendor/gps-legacy/Android.bp
+@@ -4,6 +4,7 @@
+ 
+ soong_namespace {
+     imports: [
++        "device/xiaomi/veux",
+         "vendor/qcom/common/vendor/display/4.19",
+         "vendor/qcom/common/vendor/display/5.4",
+         "vendor/qcom/common/vendor/qseecomd-legacy",

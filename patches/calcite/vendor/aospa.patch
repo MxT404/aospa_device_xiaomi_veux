@@ -1,0 +1,56 @@
+diff --git a/build/core/mkdir.mk b/build/core/mkdir.mk
+index 01ab1f37b4b434c9988049b260bbcbe80e3074b1..dd3d2755eaef98a7ac3ea57dec4b9c4fd76028fa 100644
+--- a/build/core/mkdir.mk
++++ b/build/core/mkdir.mk
+@@ -18,8 +18,11 @@ endif
+ 
+ include $(BUILD_SYSTEM)/base_rules.mk
+ 
++veux_qcom_mountpoint_modules := vendor_bt_firmware_mountpoint vendor_dsp_mountpoint vendor_firmware_mnt_mountpoint
++ifeq ($(and $(filter veux,$(TARGET_DEVICE)),$(filter true,$(TARGET_FWK_SUPPORTS_FULL_VALUEADDS)),$(filter $(LOCAL_MODULE),$(veux_qcom_mountpoint_modules))),)
+ $(LOCAL_SOONG_INSTALL_DIR):
+ 	@mkdir -p $@
++endif
+ 
+ $(LOCAL_BUILT_MODULE): $(LOCAL_SOONG_INSTALL_DIR) $(LOCAL_ADDITIONAL_DEPENDENCIES)
+ 	@mkdir -p $(dir $@)
+diff --git a/target/product/aospa-target.mk b/target/product/aospa-target.mk
+index 41af06218d7f2600f0379291f60f6c0368fed293..69b86450da9770ee0ee743e4e0a0f38c1157cc77 100644
+--- a/target/product/aospa-target.mk
++++ b/target/product/aospa-target.mk
+@@ -60,7 +60,9 @@ PRODUCT_SYSTEM_EXT_PROPERTIES += \
+ 
+ # Dexpreopt
+ # Don't dexpreopt prebuilts. (For GMS).
++ifneq ($(TARGET_BUILD_VANILLA),true)
+ DONT_DEXPREOPT_PREBUILTS := true
++endif
+ 
+ PRODUCT_DEXPREOPT_SPEED_APPS += \
+     Launcher3QuickStep \
+@@ -94,6 +96,7 @@ PRODUCT_PACKAGES += \
+     vendor.aospa.power-service
+ 
+ # Google - GMS, Pixel, and Mainline Modules
++ifneq ($(TARGET_BUILD_VANILLA),true)
+ $(call inherit-product, vendor/google/gms/config.mk)
+ $(call inherit-product, vendor/google/pixel/config.mk)
+ ifneq ($(TARGET_EXCLUDE_GMODULES), true)
+@@ -103,6 +106,7 @@ endif
+ PRODUCT_PRODUCT_PROPERTIES += \
+     remote_provisioning.enable_rkpd=true \
+     remote_provisioning.hostname=remoteprovisioning.googleapis.com
++endif
+ 
+ # HIDL
+ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE += \
+diff --git a/products/veux/beans.xml b/products/veux/beans.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..68b38de123d1f4ce32c68aab76b3886719eee137
+--- /dev/null
++++ b/products/veux/beans.xml
+@@ -0,0 +1,4 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest>
++  <!-- Repo loads the veux dependencies through .repo/local_manifests/veux.xml. -->
++</manifest>

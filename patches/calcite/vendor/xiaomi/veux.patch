@@ -1,0 +1,63 @@
+diff --git a/Android.bp b/Android.bp
+index f77cbe855ca6c38c784bc8a0dc981b71b15de1e9..092fec103b89a7a911f14047dfd0a5af0fdb9218 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -6,11 +6,7 @@ soong_namespace {
+     imports: [
+         "device/xiaomi/veux",
+         "hardware/qcom-caf/sm8350",
+-        "hardware/qcom-caf/wlan",
+         "hardware/xiaomi",
+-        "vendor/qcom/opensource/commonsys/display",
+-        "vendor/qcom/opensource/commonsys-intf/display",
+-        "vendor/qcom/opensource/dataservices",
+         "vendor/qcom/opensource/display",
+     ],
+ }
+@@ -9731,7 +9727,7 @@ cc_prebuilt_library_shared {
+                 "libhidlbase",
+                 "liblog",
+                 "libutils",
+-                "vendor.qti.hardware.fm@1.0_vendor",
++                "//:vendor.qti.hardware.fm@1.0",
+                 "libc++",
+                 "libc",
+                 "libm",
+@@ -10242,7 +10238,7 @@ cc_prebuilt_library_shared {
+                 "libhidlbase",
+                 "liblog",
+                 "libutils",
+-                "vendor.qti.hardware.fm@1.0_vendor",
++                "//:vendor.qti.hardware.fm@1.0",
+                 "android.hardware.bluetooth@1.0-impl-qti",
+                 "libqmi",
+                 "libqmiservices",
+@@ -19077,6 +19073,7 @@ cc_prebuilt_library_shared {
+ 
+ cc_prebuilt_library_shared {
+     name: "vendor.qti.hardware.fm@1.0_vendor",
++    enabled: false,
+     stem: "vendor.qti.hardware.fm@1.0",
+     owner: "xiaomi",
+     strip: {
+@@ -22089,7 +22086,7 @@ cc_prebuilt_binary {
+                 "libhidlbase",
+                 "android.hardware.bluetooth@1.0",
+                 "libsoc_helper",
+-                "vendor.qti.hardware.fm@1.0_vendor",
++                "//:vendor.qti.hardware.fm@1.0",
+                 "com.dsi.ant@1.0",
+                 "vendor.qti.hardware.bluetooth_sar@1.0",
+                 "vendor.qti.hardware.bluetooth_sar@1.1",
+diff --git a/veux-vendor.mk b/veux-vendor.mk
+index 44aec907f11d86d034ac2264e0dd73cac10b5c44..31a88b87bfccb1fc462746d633287e56bb226274 100644
+--- a/veux-vendor.mk
++++ b/veux-vendor.mk
+@@ -934,7 +934,6 @@ PRODUCT_PACKAGES += \
+     vendor.qti.hardware.data.lce@1.0 \
+     vendor.qti.hardware.data.qmi@1.0 \
+     vendor.qti.hardware.dsp@1.0 \
+-    vendor.qti.hardware.fm@1.0_vendor \
+     vendor.qti.hardware.mwqemadapter@1.0 \
+     vendor.qti.hardware.qccsyshal@1.0 \
+     vendor.qti.hardware.qseecom@1.0 \

@@ -1,0 +1,20 @@
+diff --git a/gms-vendor.mk b/gms-vendor.mk
+index 476b8e72ca8daff6fee0b6bd2cc652f1922c9aad..f0fd44718cfb751270775541edb78d90852b8fce 100644
+--- a/gms-vendor.mk
++++ b/gms-vendor.mk
+@@ -112,7 +112,6 @@ PRODUCT_PACKAGES += \
+     Photos \
+     SpeechServicesByGoogle \
+     TrichromeLibrary64 \
+-    WebViewGoogle64 \
+     YouTube \
+     talkback \
+     AndroidAutoStub \
+@@ -136,3 +135,7 @@ PRODUCT_PACKAGES += \
+     GoogleServicesFramework \
+     SetupWizard \
+     com.google.android.dialer.support
++
++ifneq ($(TARGET_USES_AOSP_WEBVIEW),true)
++PRODUCT_PACKAGES += WebViewGoogle64
++endif

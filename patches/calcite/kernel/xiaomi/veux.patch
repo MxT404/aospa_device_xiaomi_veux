@@ -1,0 +1,270 @@
+diff --git a/arch/arm64/configs/vendor/veux-qgki_defconfig b/arch/arm64/configs/vendor/veux-qgki_defconfig
+index 7c39e5331..3fe9b6046 100644
+--- a/arch/arm64/configs/vendor/veux-qgki_defconfig
++++ b/arch/arm64/configs/vendor/veux-qgki_defconfig
+@@ -19,6 +19,7 @@ CONFIG_LOG_BUF_SHIFT=21
+ CONFIG_UCLAMP_TASK=y
+ CONFIG_UCLAMP_BUCKETS_COUNT=20
+ CONFIG_CGROUPS=y
++CONFIG_MEMCG=y
+ CONFIG_BLK_CGROUP=y
+ CONFIG_CGROUP_SCHED=y
+ # CONFIG_FAIR_GROUP_SCHED is not set
+@@ -127,8 +128,8 @@ CONFIG_CRYPTO_SHA1_ARM64_CE=y
+ CONFIG_CRYPTO_SHA2_ARM64_CE=y
+ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_JUMP_LABEL=y
+-# CONFIG_STACKPROTECTOR is not set
+-# CONFIG_VMAP_STACK is not set
++CONFIG_STACKPROTECTOR=y
++CONFIG_VMAP_STACK=y
+ CONFIG_BLK_INLINE_ENCRYPTION=y
+ CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK=y
+ # CONFIG_MQ_IOSCHED_KYBER is not set
+@@ -773,7 +774,7 @@ CONFIG_DEBUG_KERNEL=y
+ CONFIG_KALLSYMS=y
+ CONFIG_KALLSYMS_ALL=y
+ # CONFIG_DEBUG_PREEMPT is not set
+-# CONFIG_SCHED_DEBUG is not set
++CONFIG_SCHED_DEBUG=y
+ # CONFIG_DEBUG_MISC is not set
+ # --- veux extra features (Mountify, networking, ZRAM writeback) ---
+ # Mountify / overlay module systems
+@@ -807,12 +808,12 @@ CONFIG_NETFILTER_XT_MATCH_RECENT=y
+ CONFIG_IP_NF_TARGET_TTL=y
+ CONFIG_IP6_NF_TARGET_HL=y
+ CONFIG_IP6_NF_MATCH_HL=y
+-CONFIG_IP6_NF_NAT=y
++# CONFIG_IP6_NF_NAT is not set
+ CONFIG_IP6_NF_TARGET_MASQUERADE=y
+ # ZRAM writeback (move swap to storage)
+ CONFIG_ZRAM_WRITEBACK=y
+ # --- Droidspaces (namespaces/containers) ---
+-CONFIG_SYSVIPC=y
++# CONFIG_SYSVIPC is not set
+ CONFIG_POSIX_MQUEUE=y
+ CONFIG_IPC_NS=y
+ CONFIG_PID_NS=y
+@@ -836,3 +837,11 @@ CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+ CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+ # CONFIG_KSU_SUSFS_SUS_SU is not set
+ CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y
++CONFIG_CRYPTO_CTR=y
++CONFIG_CRYPTO_GCM=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++CONFIG_PROFILING=y
++CONFIG_STACKPROTECTOR_STRONG=y
++CONFIG_STRICT_MODULE_RWX=y
+diff --git a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
+index 56afed40d..2f36f5b32 100644
+--- a/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
++++ b/drivers/input/touchscreen/goodix_gtx8/goodix_ts_core.c
+@@ -1981,14 +1981,19 @@ static void goodix_ts_resume_work(struct work_struct *work)
+ {
+ 	struct goodix_ts_core *core_data =
+ 		container_of(work, struct goodix_ts_core, resume_work);
+-	goodix_ts_resume(core_data);
++
++	if (atomic_read(&core_data->suspended))
++		goodix_ts_resume(core_data);
+ }
+ 
+ static void goodix_ts_suspend_work(struct work_struct *work)
+ {
+ 	struct goodix_ts_core *core_data =
+ 		container_of(work, struct goodix_ts_core, suspend_work);
+-	goodix_ts_suspend(core_data);
++
++	/* A low-power transition can also arrive through the blank notifier. */
++	if (!atomic_read(&core_data->suspended))
++		goodix_ts_suspend(core_data);
+ }
+ 
+ static int drm_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+@@ -2000,13 +2005,15 @@ static int drm_notifier_callback(struct notifier_block *self, unsigned long even
+ 	switch (*blank) {
+ 	case DRM_PANEL_BLANK_UNBLANK:
+ 		ts_debug("resume: event = %lu, blank = %d", event, *blank);
+-		if (DRM_PANEL_EVENT_BLANK == event)
++		if (event == DRM_PANEL_EVENT_BLANK ||
++		    event == DRM_PANEL_EVENT_LOW_POWER)
+ 			queue_work(core_data->ts_workqueue, &core_data->resume_work);
+ 		break;
+ 	case DRM_PANEL_BLANK_POWERDOWN:
+ 	case DRM_PANEL_BLANK_LP:
+ 		ts_debug("suspend: event = %lu, blank = %d", event, *blank);
+-		if (DRM_PANEL_EARLY_EVENT_BLANK == event) {
++		if (event == DRM_PANEL_EARLY_EVENT_BLANK ||
++		    event == DRM_PANEL_EVENT_LOW_POWER) {
+ 			cancel_work_sync(&core_data->resume_work);
+ 			queue_work(core_data->ts_workqueue, &core_data->suspend_work);
+ 		}
+diff --git a/fs/proc/version.c b/fs/proc/version.c
+index 000be410d..b449f1865 100644
+--- a/fs/proc/version.c
++++ b/fs/proc/version.c
+@@ -5,30 +5,9 @@
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+ #include <linux/utsname.h>
+-#include <linux/sched.h>
+-#include <linux/sched/signal.h>
+ 
+ static int version_proc_show(struct seq_file *m, void *v)
+ {
+-	struct task_struct *t;
+-	bool is_gms = false;
+-
+-	rcu_read_lock();
+-	for_each_thread(current, t) {
+-		if (thread_group_leader(t)) {
+-			if (!strcmp(t->comm, "id.gms.unstable")) {
+-				is_gms = true;
+-				break;
+-			}
+-		}
+-	}
+-	rcu_read_unlock();
+-
+-	if (is_gms) {
+-		seq_printf(m, "Linux version 5.10.236-android12-9-00003-gfb24cf99ad97-ab14313284 (android-build@google.com) (Android (10700883, based on r487747c) clang version 17.0.2) #1 SMP PREEMPT Wed Jan 15 12:00:00 UTC 2025\n");
+-		return 0;
+-	}
+-
+ 	seq_printf(m, linux_proc_banner,
+ 		utsname()->sysname,
+ 		utsname()->release,
+diff --git a/gen_headers_arm.bp b/gen_headers_arm.bp
+index 05661be1f..04ff1f39e 100644
+--- a/gen_headers_arm.bp
++++ b/gen_headers_arm.bp
+@@ -179,6 +179,7 @@ gen_headers_out_arm = [
+     "linux/cec.h",
+     "linux/cgroupstats.h",
+     "linux/chio.h",
++    "linux/close_range.h",
+     "linux/cm4000_cs.h",
+     "linux/cn_proc.h",
+     "linux/coda.h",
+@@ -636,8 +637,10 @@ gen_headers_out_arm = [
+     "linux/vt.h",
+     "linux/vtpm_proxy.h",
+     "linux/wait.h",
++    "linux/watch_queue.h",
+     "linux/watchdog.h",
+     "linux/wimax.h",
++    "linux/wireguard.h",
+     "linux/wireless.h",
+     "linux/wmi.h",
+     "linux/x25.h",
+diff --git a/gen_headers_arm64.bp b/gen_headers_arm64.bp
+index bee9c6226..936409070 100644
+--- a/gen_headers_arm64.bp
++++ b/gen_headers_arm64.bp
+@@ -175,6 +175,7 @@ gen_headers_out_arm64 = [
+     "linux/cec.h",
+     "linux/cgroupstats.h",
+     "linux/chio.h",
++    "linux/close_range.h",
+     "linux/cm4000_cs.h",
+     "linux/cn_proc.h",
+     "linux/coda.h",
+@@ -631,8 +632,10 @@ gen_headers_out_arm64 = [
+     "linux/vt.h",
+     "linux/vtpm_proxy.h",
+     "linux/wait.h",
++    "linux/watch_queue.h",
+     "linux/watchdog.h",
+     "linux/wimax.h",
++    "linux/wireguard.h",
+     "linux/wireless.h",
+     "linux/wmi.h",
+     "linux/x25.h",
+@@ -859,6 +862,7 @@ gen_headers_out_arm64 = [
+     "linux/netfilter_ipv4/ipt_LOG.h",
+     "linux/netfilter_ipv4/ipt_NATTYPE.h",
+     "linux/netfilter_ipv4/ipt_REJECT.h",
++    "linux/netfilter_ipv4/ipt_TRIGGER.h",
+     "linux/netfilter_ipv4/ipt_TTL.h",
+     "linux/netfilter_ipv4/ipt_ah.h",
+     "linux/netfilter_ipv4/ipt_ecn.h",
+diff --git a/include/drm/drm_panel.h b/include/drm/drm_panel.h
+index 1f977fff3..c40055808 100644
+--- a/include/drm/drm_panel.h
++++ b/include/drm/drm_panel.h
+@@ -33,6 +33,8 @@
+ #define DRM_PANEL_EVENT_BLANK		0x01
+ /* A hardware display blank early change occurred */
+ #define DRM_PANEL_EARLY_EVENT_BLANK	0x02
++/* The panel entered or exited its hardware low-power mode. */
++#define DRM_PANEL_EVENT_LOW_POWER	0x03
+ 
+ enum {
+ 	/* panel: power on */
+diff --git a/kernel/Makefile b/kernel/Makefile
+index eab9664df..8db0893fe 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -129,7 +129,7 @@ KCOV_INSTRUMENT_stackleak.o := n
+ $(obj)/configs.o: $(obj)/config_data.gz
+ 
+ targets += config_data config_data.gz
+-$(obj)/config_data.gz: arch/arm64/configs/stock_defconfig FORCE
++$(obj)/config_data.gz: $(obj)/config_data FORCE
+ 	$(call if_changed,gzip)
+ 
+ filechk_cat = cat $<
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index 348dd654e..a3572fd22 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -1264,6 +1264,8 @@ int dsi_display_set_power(struct drm_connector *connector,
+ 		int power_mode, void *disp)
+ {
+ 	struct dsi_display *display = disp;
++	int previous_mode;
++	bool was_low_power, is_low_power;
+ 	int rc = 0;
+ 
+ 	if (!display || !display->panel) {
+@@ -1271,6 +1273,7 @@ int dsi_display_set_power(struct drm_connector *connector,
+ 		return -EINVAL;
+ 	}
+ 
++	previous_mode = display->panel->power_mode;
+ 	switch (power_mode) {
+ 	case SDE_MODE_DPMS_LP1:
+ 		if (display->panel->power_mode == SDE_MODE_DPMS_LP2) {
+@@ -1302,10 +1305,27 @@ int dsi_display_set_power(struct drm_connector *connector,
+ 	DSI_DEBUG("Power mode transition from %d to %d %s",
+ 			display->panel->power_mode, power_mode,
+ 			rc ? "failed" : "successful");
+-	if (!rc)
+-		display->panel->power_mode = power_mode;
++	if (rc)
++		return rc;
+ 
+-	return rc;
++	display->panel->power_mode = power_mode;
++	was_low_power = previous_mode == SDE_MODE_DPMS_LP1 ||
++			previous_mode == SDE_MODE_DPMS_LP2;
++	is_low_power = power_mode == SDE_MODE_DPMS_LP1 ||
++			power_mode == SDE_MODE_DPMS_LP2;
++	if (was_low_power != is_low_power) {
++		int blank = is_low_power ? DRM_PANEL_BLANK_LP :
++				DRM_PANEL_BLANK_UNBLANK;
++		struct drm_panel_notifier notifier = {
++			.data = &blank,
++			.id = connector->base.id,
++		};
++
++		drm_panel_notifier_call_chain(&display->panel->drm_panel,
++				DRM_PANEL_EVENT_LOW_POWER, &notifier);
++	}
++
++	return 0;
+ }
+ 
+ #ifdef CONFIG_DEBUG_FS

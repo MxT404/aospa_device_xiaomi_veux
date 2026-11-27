@@ -1,0 +1,237 @@
+diff --git a/core/java/android/hardware/camera2/params/StreamConfigurationMap.java b/core/java/android/hardware/camera2/params/StreamConfigurationMap.java
+index f94c4a930ec437f4f42022ae8fd5201c01639e22..72fb59de5b2161424b4e6261d2aa9f0701a73f72 100644
+--- a/core/java/android/hardware/camera2/params/StreamConfigurationMap.java
++++ b/core/java/android/hardware/camera2/params/StreamConfigurationMap.java
+@@ -73,6 +73,39 @@ public final class StreamConfigurationMap {
+ 
+     private static final int MAX_DIMEN_FOR_ROUNDING = 1920; // maximum allowed width for rounding
+ 
++    /**
++     * Legacy constructor used by prebuilt camera apps that construct vendor stream maps.
++     *
++     * @hide
++     */
++    public StreamConfigurationMap(
++            StreamConfiguration[] configurations,
++            StreamConfigurationDuration[] minFrameDurations,
++            StreamConfigurationDuration[] stallDurations,
++            StreamConfiguration[] depthConfigurations,
++            StreamConfigurationDuration[] depthMinFrameDurations,
++            StreamConfigurationDuration[] depthStallDurations,
++            StreamConfiguration[] dynamicDepthConfigurations,
++            StreamConfigurationDuration[] dynamicDepthMinFrameDurations,
++            StreamConfigurationDuration[] dynamicDepthStallDurations,
++            StreamConfiguration[] heicConfigurations,
++            StreamConfigurationDuration[] heicMinFrameDurations,
++            StreamConfigurationDuration[] heicStallDurations,
++            StreamConfiguration[] jpegRConfigurations,
++            StreamConfigurationDuration[] jpegRMinFrameDurations,
++            StreamConfigurationDuration[] jpegRStallDurations,
++            HighSpeedVideoConfiguration[] highSpeedVideoConfigurations,
++            ReprocessFormatsMap inputOutputFormatsMap,
++            boolean listHighResolution) {
++        this(configurations, minFrameDurations, stallDurations,
++                depthConfigurations, depthMinFrameDurations, depthStallDurations,
++                dynamicDepthConfigurations, dynamicDepthMinFrameDurations,
++                dynamicDepthStallDurations, heicConfigurations, heicMinFrameDurations,
++                heicStallDurations, jpegRConfigurations, jpegRMinFrameDurations,
++                jpegRStallDurations, null, null, null, highSpeedVideoConfigurations,
++                inputOutputFormatsMap, listHighResolution);
++    }
++
+     /**
+      * Create a new {@link StreamConfigurationMap}.
+      *
+diff --git a/packages/SystemUI/multivalentTests/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImplTest.kt b/packages/SystemUI/multivalentTests/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImplTest.kt
+index 649a4ab2b968a4a9c1b74f03105c9646d68bcdf1..1664827cf48a8f25fef7ebc03d962465ffcc3620 100644
+--- a/packages/SystemUI/multivalentTests/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImplTest.kt
++++ b/packages/SystemUI/multivalentTests/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImplTest.kt
+@@ -39,6 +39,7 @@ import org.junit.runner.RunWith
+ import org.mockito.ArgumentCaptor
+ import org.mockito.Captor
+ import org.mockito.Mock
++import org.mockito.Mockito.doAnswer
+ import org.mockito.Mockito.never
+ import org.mockito.Mockito.verify
+ import org.mockito.Mockito.`when`
+@@ -111,6 +112,20 @@ class DeviceProvisionedControllerImplTest : SysuiTestCase() {
+         assertThat(controller.isDeviceProvisioned).isTrue()
+     }
+ 
++    @Test
++    fun testProvisioningCompletesDuringInitialization() {
++        doAnswer {
++            globalSettings.putInt(Settings.Global.DEVICE_PROVISIONED, 1)
++            secureSettings.putIntForUser(Settings.Secure.USER_SETUP_COMPLETE, 1, START_USER)
++            null
++        }.`when`(userTracker).addCallback(any(), any())
++
++        init()
++
++        assertThat(controller.isDeviceProvisioned).isTrue()
++        assertThat(controller.isCurrentUserSetup).isTrue()
++    }
++
+     @Test
+     fun testUserSetupWhenCreated() {
+         secureSettings.putIntForUser(Settings.Secure.USER_SETUP_COMPLETE, 1, START_USER)
+diff --git a/packages/SystemUI/src/com/android/systemui/classifier/FalsingModule.java b/packages/SystemUI/src/com/android/systemui/classifier/FalsingModule.java
+index 13ec31f5609c00dc87c3ee83de1c7a582541f45e..a944cce202714254b5798cf455f480ba3d25c8c0 100644
+--- a/packages/SystemUI/src/com/android/systemui/classifier/FalsingModule.java
++++ b/packages/SystemUI/src/com/android/systemui/classifier/FalsingModule.java
+@@ -100,7 +100,8 @@ public interface FalsingModule {
+     @Provides
+     @Named(LONG_TAP_TOUCH_SLOP)
+     static float providesLongTapTouchSlop(ViewConfiguration viewConfiguration) {
+-        return viewConfiguration.getScaledTouchSlop() * 1.25f;
++        // Round up to a physical pixel so subpixel input jitter does not reject a long press.
++        return (float) Math.ceil(viewConfiguration.getScaledTouchSlop() * 1.25f);
+     }
+ 
+     /** */
+diff --git a/packages/SystemUI/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardSettingsMenuViewModel.kt b/packages/SystemUI/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardSettingsMenuViewModel.kt
+index 20b9764666389fcb9212ae7c85cfd59076096149..44e38440b4971d8fd0146f339a8813068f7d18e5 100644
+--- a/packages/SystemUI/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardSettingsMenuViewModel.kt
++++ b/packages/SystemUI/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardSettingsMenuViewModel.kt
+@@ -18,6 +18,7 @@
+ package com.android.systemui.keyguard.ui.viewmodel
+ 
+ import com.android.systemui.accessibility.domain.interactor.AccessibilityInteractor
++import com.android.systemui.classifier.domain.interactor.FalsingInteractor
+ import com.android.systemui.common.shared.model.Icon
+ import com.android.systemui.common.shared.model.Text
+ import com.android.systemui.common.ui.domain.interactor.ConfigurationInteractor
+@@ -33,6 +34,7 @@ constructor(
+     private val interactor: KeyguardTouchHandlingInteractor,
+     configurationInteractor: ConfigurationInteractor,
+     accessibilityInteractor: AccessibilityInteractor,
++    private val falsingInteractor: FalsingInteractor,
+ ) {
+     val isVisible: Flow<Boolean> = interactor.isMenuVisible
+     val shouldOpenSettings: Flow<Boolean> = interactor.shouldOpenSettings
+@@ -49,6 +51,9 @@ constructor(
+         )
+ 
+     fun onTouchGestureStarted() {
++        // The popup handles tap slop itself. Do not score its tap as an unclassified
++        // lock-screen gesture after the authentication prompt has started opening.
++        falsingInteractor.avoidGesture()
+         interactor.onMenuTouchGestureStarted()
+     }
+ 
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImpl.kt b/packages/SystemUI/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImpl.kt
+index 8123f8f3bd3d13d8984f7a3a3947adaadf6e9a76..287575e931a1598577225942e32cfa3aff0069ea 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImpl.kt
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/policy/DeviceProvisionedControllerImpl.kt
+@@ -121,7 +121,6 @@ constructor(
+             return
+         }
+         dumpManager.registerDumpable(this)
+-        updateValues()
+         userTracker.addCallback(userChangedCallback, backgroundExecutor)
+         globalSettings.registerContentObserverSync(deviceProvisionedUri, observer)
+         secureSettings.registerContentObserverForUserSync(
+@@ -129,14 +128,17 @@ constructor(
+             observer,
+             UserHandle.USER_ALL
+         )
++        updateValues()
+     }
+ 
+     @WorkerThread
+     private fun updateValues(updateDeviceProvisioned: Boolean = true, updateUser: Int = ALL_USERS) {
+-        if (updateDeviceProvisioned) {
+-            deviceProvisioned.set(globalSettings.getInt(Settings.Global.DEVICE_PROVISIONED, 0) != 0)
+-        }
+         synchronized(lock) {
++            if (updateDeviceProvisioned) {
++                deviceProvisioned.set(
++                    globalSettings.getInt(Settings.Global.DEVICE_PROVISIONED, 0) != 0
++                )
++            }
+             if (updateUser == ALL_USERS) {
+                 val n = userSetupComplete.size()
+                 for (i in 0 until n) {
+diff --git a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/lockscreen/elementproviders/SettingsMenuElementProviderKosmos.kt b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/lockscreen/elementproviders/SettingsMenuElementProviderKosmos.kt
+index b79c1a549938fd829248dbdacca78614d77c427b..bc9045af3d75f43f057ad3265294f90f92166baf 100644
+--- a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/lockscreen/elementproviders/SettingsMenuElementProviderKosmos.kt
++++ b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/lockscreen/elementproviders/SettingsMenuElementProviderKosmos.kt
+@@ -18,6 +18,7 @@ package com.android.systemui.keyguard.ui.lockscreen.elementproviders
+ 
+ import android.content.testableContext
+ import com.android.systemui.accessibility.domain.interactor.accessibilityInteractor
++import com.android.systemui.classifier.domain.interactor.falsingInteractor
+ import com.android.systemui.common.ui.domain.interactor.configurationInteractor
+ import com.android.systemui.haptics.vibratorHelper
+ import com.android.systemui.keyguard.domain.interactor.keyguardTouchHandlingInteractor
+@@ -36,6 +37,7 @@ val Kosmos.settingsMenuElementProvider by
+                     interactor = keyguardTouchHandlingInteractor,
+                     configurationInteractor = configurationInteractor,
+                     accessibilityInteractor = accessibilityInteractor,
++                    falsingInteractor = falsingInteractor,
+                 ),
+             touchHandlingViewModelFactory = keyguardTouchHandlingViewModelFactory,
+             vibratorHelper = vibratorHelper,
+diff --git a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardLongPressViewModelKosmos.kt b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardLongPressViewModelKosmos.kt
+index 430e7abf323f9a6b4afa161bc3bee4b78992aa04..e3586b95b446a53f8dbc6113f7083c3652f6dfca 100644
+--- a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardLongPressViewModelKosmos.kt
++++ b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardLongPressViewModelKosmos.kt
+@@ -17,6 +17,7 @@
+ package com.android.systemui.keyguard.ui.viewmodel
+ 
+ import com.android.systemui.accessibility.domain.interactor.accessibilityInteractor
++import com.android.systemui.classifier.domain.interactor.falsingInteractor
+ import com.android.systemui.classifier.falsingManager
+ import com.android.systemui.common.ui.domain.interactor.configurationInteractor
+ import com.android.systemui.communal.domain.interactor.communalInteractor
+@@ -37,6 +38,7 @@ val Kosmos.keyguardTouchHandlingViewModel by
+                     interactor = keyguardTouchHandlingInteractor,
+                     configurationInteractor = configurationInteractor,
+                     accessibilityInteractor = accessibilityInteractor,
++                    falsingInteractor = falsingInteractor,
+                 ),
+             sceneInteractor = sceneInteractor,
+             communalInteractor = communalInteractor,
+diff --git a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardTouchHandlingViewModelFactoryKosmos.kt b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardTouchHandlingViewModelFactoryKosmos.kt
+index 7b37c2f70e6809f5d34a86685f0550aed85ef0ec..e2d629021eefa3ea61c81fa4c9727011c92e1fcd 100644
+--- a/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardTouchHandlingViewModelFactoryKosmos.kt
++++ b/packages/SystemUI/tests/utils/src/com/android/systemui/keyguard/ui/viewmodel/KeyguardTouchHandlingViewModelFactoryKosmos.kt
+@@ -17,6 +17,7 @@
+ package com.android.systemui.keyguard.ui.viewmodel
+ 
+ import com.android.systemui.accessibility.domain.interactor.accessibilityInteractor
++import com.android.systemui.classifier.domain.interactor.falsingInteractor
+ import com.android.systemui.classifier.falsingManager
+ import com.android.systemui.common.ui.domain.interactor.configurationInteractor
+ import com.android.systemui.communal.domain.interactor.communalInteractor
+@@ -38,6 +39,7 @@ val Kosmos.keyguardTouchHandlingViewModelFactory by
+                         interactor = keyguardTouchHandlingInteractor,
+                         configurationInteractor = configurationInteractor,
+                         accessibilityInteractor = accessibilityInteractor,
++                        falsingInteractor = falsingInteractor,
+                     ),
+                     sceneInteractor,
+                     communalInteractor,
+diff --git a/services/core/java/com/android/server/power/PowerManagerService.java b/services/core/java/com/android/server/power/PowerManagerService.java
+index 212110b9b2fd8cc68b1f93b036635fa71497090f..d76834815ebee81a4b927556802e0111e9ca49b4 100644
+--- a/services/core/java/com/android/server/power/PowerManagerService.java
++++ b/services/core/java/com/android/server/power/PowerManagerService.java
+@@ -1847,7 +1847,8 @@ public final class PowerManagerService extends SystemService
+ 
+         boolean gesturesEnabled = Settings.System.getIntForUser(resolver,
+                 Settings.System.GESTURES_ENABLED, 1, UserHandle.USER_CURRENT) != 0;
+-        if (gesturesEnabled != mGesturesEnabled) {
++        boolean gesturesChanged = gesturesEnabled != mGesturesEnabled;
++        if (gesturesChanged) {
+             mGesturesEnabled = gesturesEnabled;
+             mNativeWrapper.nativeSetParanoidFeature(POWER_FEATURE_GESTURES,
+                         mGesturesEnabled ? 1 : 0);
+@@ -1858,7 +1859,7 @@ public final class PowerManagerService extends SystemService
+                     Settings.System.GESTURE_DOUBLE_TAP, mContext.getResources()
+                     .getInteger(com.android.internal.R.integer.config_doubleTapDefault),
+                     UserHandle.USER_CURRENT) > 0;
+-            if (doubleTapEnabled != mDoubleTapEnabled) {
++            if (gesturesChanged || doubleTapEnabled != mDoubleTapEnabled) {
+                 mDoubleTapEnabled = doubleTapEnabled;
+                 mNativeWrapper.nativeSetParanoidFeature(POWER_FEATURE_DOUBLE_TAP,
+                         mDoubleTapEnabled && mGesturesEnabled ? 1 : 0);
