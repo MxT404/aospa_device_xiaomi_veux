@@ -49,8 +49,8 @@ if ! flock -n 9; then
     exit 1
 fi
 
-if [[ $mode != check ]]; then
-    bash "$top/device/xiaomi/veux/vendorsetup.sh"
+if [[ $mode != check && ${VEUX_VENDORSETUP_SYNCED:-} != 1 ]]; then
+    bash "$top/device/xiaomi/veux/vendorsetup.sh" --sync-only
 fi
 
 patch_dir=device/xiaomi/veux/patches/calcite
@@ -114,4 +114,5 @@ if [[ $mode == --apply-only ]]; then
     exit 0
 fi
 
+export VEUX_VENDORSETUP_SYNCED=1
 exec ./rom-build.sh veux "$@"

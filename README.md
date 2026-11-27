@@ -17,10 +17,12 @@ git clone -b veux-calcite https://github.com/MxT404/aospa_device_xiaomi_veux.git
 bash device/xiaomi/veux/vendorsetup.sh
 ```
 
-The setup script installs the local manifest for the manually cloned tree and
-syncs Calcite on a fresh checkout. In an existing Calcite checkout it syncs
-missing device projects when you source `build/envsetup.sh` or run the device
-build script. Set `VEUX_SYNC_JOBS` to change the default of eight sync jobs.
+`vendorsetup.sh` clones missing device repositories from `MxT404`, including
+the kernel, vendor blobs, camera, Bluetooth, and Dolby. It uses Repo for
+Calcite platform overrides and applies the build patches after setup. On a
+fresh checkout it also syncs the base Calcite source. Sourcing
+`build/envsetup.sh` runs setup on an existing checkout. Set `VEUX_SYNC_JOBS`
+to change the default of eight Repo sync jobs.
 
 Run the device build script from the checkout root.
 
