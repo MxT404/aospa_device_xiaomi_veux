@@ -49,6 +49,10 @@ if ! flock -n 9; then
     exit 1
 fi
 
+if [[ $mode != check ]]; then
+    bash "$top/device/xiaomi/veux/vendorsetup.sh"
+fi
+
 patch_dir=device/xiaomi/veux/patches/calcite
 mapfile -d '' patches < <(find "$patch_dir" -name '*.patch' -type f -print0 | sort -z)
 if (( ${#patches[@]} == 0 )); then
