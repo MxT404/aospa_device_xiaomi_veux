@@ -93,6 +93,10 @@ BOARD_KERNEL_CMDLINE := \
     kpti=off \
     firmware_class.path=/vendor/firmware
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+endif
+
 TARGET_KERNEL_CONFIG := vendor/veux-qgki_defconfig
 TARGET_KERNEL_SOURCE := kernel/xiaomi/veux
 KERNEL_CLANG_VERSION := r563880c
