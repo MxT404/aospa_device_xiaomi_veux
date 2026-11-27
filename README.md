@@ -18,11 +18,13 @@ bash device/xiaomi/veux/vendorsetup.sh
 ```
 
 `vendorsetup.sh` clones missing device repositories from `MxT404`, including
-the kernel, vendor blobs, camera, Bluetooth, and Dolby. It uses Repo for
-Calcite platform overrides and applies the build patches after setup. On a
-fresh checkout it also syncs the base Calcite source. Sourcing
-`build/envsetup.sh` runs setup on an existing checkout. Set `VEUX_SYNC_JOBS`
-to change the default of eight Repo sync jobs.
+the kernel, vendor blobs, camera, Bluetooth, and Dolby. It uses Repo for the
+Calcite platform projects and checks out the published commits recorded in
+the device manifests. On an existing checkout, it fast-forwards compatible
+projects and reports any conflicting local edits. On a fresh checkout it
+also syncs the base Calcite source. Sourcing `build/envsetup.sh` runs setup
+on an existing checkout. Set `VEUX_SYNC_JOBS` to change the default of eight
+Repo sync jobs.
 
 Run the device build script from the checkout root.
 
@@ -42,6 +44,10 @@ for a manual `lunch` and `m` build. When the environment loads this device's
 
 Device configuration and patches are portable across build machines. Remote
 build execution uses the configuration of the machine running the build.
+After installing the BuildBuddy reclient under
+`prebuilts/remoteexecution-client/buildbuddyfix/`, set
+`VEUX_USE_RBE_FORKS=1` when running `vendorsetup.sh` to select the published
+Make and Soong RBE commits.
 
 ### Signing a release OTA
 
