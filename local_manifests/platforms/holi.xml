@@ -3,17 +3,17 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <manifest>
   <!-- SM8350-family HALs from Calcite's Lahaina platform, including the Holi audio SKU. -->
-  <project path="vendor/qcom/opensource/audio-hal/primary-hal" name="MxT404/android_hardware_qcom_audio" remote="github" revision="veux-calcite" />
-  <project path="hardware/qcom/display" name="MxT404/android_hardware_qcom_display" remote="github" revision="calcite-888" />
+  <project path="vendor/qcom/opensource/audio-hal/primary-hal" name="MxT404/android_hardware_qcom_audio" remote="github" revision="c40f47321a1ac126dece864834bbf055950959ed" upstream="refs/heads/veux-calcite" />
+  <project path="hardware/qcom/display" name="MxT404/android_hardware_qcom_display" remote="github" revision="126670adf39d253ee58323239ec7bd05770ac7d8" upstream="refs/heads/calcite-888" />
   <!-- The veux device project contains its own GNSS HAL and configurations. -->
-  <project path="hardware/qcom/media" name="MxT404/android_hardware_qcom_media" remote="github" revision="calcite-888" />
+  <project path="hardware/qcom/media" name="MxT404/android_hardware_qcom_media" remote="github" revision="64b5ade361daa23f2b1299adb587183722aaaf30" upstream="refs/heads/calcite-888" />
   <remove-project name="AOSPA/android_hardware_qcom_thermal" />
-  <project path="vendor/qcom/opensource/thermal-hal" name="MxT404/android_hardware_qcom_thermal" remote="github" revision="calcite-legacy" />
-  <project path="vendor/qcom/opensource/audio-hal/st-hal" name="MxT404/android_vendor_qcom_opensource_audio-hal_st-hal" remote="github" revision="veux-calcite" />
+  <project path="vendor/qcom/opensource/thermal-hal" name="MxT404/android_hardware_qcom_thermal" remote="github" revision="339ecff03f7509351035c6d33cef2b5768c86f6d" upstream="refs/heads/calcite-legacy" />
+  <project path="vendor/qcom/opensource/audio-hal/st-hal" name="MxT404/android_vendor_qcom_opensource_audio-hal_st-hal" remote="github" revision="134498b1680968e0a5917724009253cb0be79191" upstream="refs/heads/veux-calcite" />
   <!-- Paths imported by the veux device and vendor trees, from the LineageOS 24.0 manifest. -->
   <project path="device/lineage/sepolicy" name="MxT404/android_device_lineage_sepolicy" remote="github" revision="dbf2ed7498761fbe4313875ba47a70418703e94d" upstream="refs/heads/lineage-24.0" />
-  <project path="hardware/google/pixel" name="MxT404/android_hardware_google_pixel" remote="github" revision="lineage-24.0" />
-  <project path="hardware/lineage/interfaces" name="MxT404/android_hardware_lineage_interfaces" remote="github" revision="lineage-24.0" />
+  <project path="hardware/google/pixel" name="MxT404/android_hardware_google_pixel" remote="github" revision="8bd3c71cf2be40cfbe8f5a4b9bf5574ee9fbc624" upstream="refs/heads/lineage-24.0" />
+  <project path="hardware/lineage/interfaces" name="MxT404/android_hardware_lineage_interfaces" remote="github" revision="4f6225db0d3c8cda1f59641fe0d7e53bd5e6449a" upstream="refs/heads/lineage-24.0" />
   <project path="hardware/qcom-caf/common" name="MxT404/android_hardware_qcom-caf_common" remote="github" revision="412def46de87169681b27352bfab22d0b849e8dd" upstream="refs/heads/veux-calcite">
     <linkfile src="os_pickup_qssi.bp" dest="hardware/qcom-caf/sm8350/Android.bp" />
   </project>
