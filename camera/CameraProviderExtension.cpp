@@ -1,83 +1,54 @@
+// SPDX-License-Identifier: Apache-2.0
+
+#include "CameraProviderExtension.h"
+
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <stdio.h>
 #include <unistd.h>
-#include <android/log.h>
-#include <cutils/properties.h>
-
-#include <atomic>
-#include <string>
-#include <utility>
-#include <vector>
 
 #define LOG_TAG "CameraProviderExtension"
-#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#include <log/log.h>
 
-// Torch runs on the rear camera's flash device only. camera-flash@1 and @3 are
-// the same LED driver IC seen through the front and aux sensors; the kernel
-// rejects writes there because the HAL never drives torch on them.
-static const char* kTorchStrengthPath =
-    "/sys/devices/platform/soc/5c1b000.qcom,cci0/5c1b000.qcom,cci0:qcom,camera-flash@0/torch_strength";
+namespace {
 
-// Torch current the camera HAL programs on its own (register 0x04 = 0x2c).
-static constexpr int32_t kTorchDefaultStrength = 44;
-static constexpr int32_t kTorchMaxStrength = 127;
+// Only the main rear camera drives the torch through this flash controller.
+constexpr char kTorchStrengthPath[] =
+        "/sys/devices/platform/soc/5c1b000.qcom,cci0/"
+        "5c1b000.qcom,cci0:qcom,camera-flash@0/torch_strength";
 
-// torch_strength is write-only, so remember the level last requested.
-static std::atomic<int32_t> sTorchStrength{kTorchDefaultStrength};
+// The stock HAL programs register 0x04 to 0x2c. Allow dimming from that level.
+constexpr int32_t kStockTorchStrength = 0x2c;
 
-static void setTorchStrengthSysfs(int32_t torchStrength) {
-    int fd = open(kTorchStrengthPath, O_WRONLY);
-    if (fd < 0) {
-        ALOGE("setTorchStrengthSysfs: Failed to open %s (errno: %d)", kTorchStrengthPath, errno);
-        return;
-    }
+} // namespace
 
-    char buf[16];
-    int len = snprintf(buf, sizeof(buf), "%d", torchStrength);
-    if (write(fd, buf, len) <= 0) {
-        ALOGE("setTorchStrengthSysfs: Failed to write %d to %s (errno: %d)", torchStrength,
-                kTorchStrengthPath, errno);
-    }
-    close(fd);
-}
-
-bool supportsTorchStrengthControlExt() {
-    return true;
-}
-
-int32_t getTorchDefaultStrengthLevelExt() {
-    return kTorchDefaultStrength;
+bool supportsTorchStrengthControlExt(const std::string& cameraId) {
+    return cameraId == "0" && access(kTorchStrengthPath, W_OK) == 0;
 }
 
 int32_t getTorchMaxStrengthLevelExt() {
-    return kTorchMaxStrength;
+    return kStockTorchStrength;
 }
 
-int32_t getTorchStrengthLevelExt() {
-    return sTorchStrength.load();
-}
-
-void setTorchStrengthLevelExt(int32_t torchStrength, bool enabled) {
-    if (!enabled) {
-        // The HAL has already turned the torch off. Writing 0 only drops the
-        // kernel's level override; it does not touch the flash hardware.
-        sTorchStrength.store(kTorchDefaultStrength);
-        setTorchStrengthSysfs(0);
-        return;
+int setTorchStrengthLevelExt(int32_t torchStrength) {
+    if (torchStrength < 1 || torchStrength > kStockTorchStrength) {
+        return -EINVAL;
     }
 
-    if (torchStrength > kTorchMaxStrength) torchStrength = kTorchMaxStrength;
-    if (torchStrength < 1) torchStrength = 1;
+    const int fd = TEMP_FAILURE_RETRY(open(kTorchStrengthPath, O_WRONLY | O_CLOEXEC));
+    if (fd < 0) {
+        const int error = errno;
+        ALOGE("Could not open torch strength control: %d", error);
+        return -error;
+    }
 
-    sTorchStrength.store(torchStrength);
-    setTorchStrengthSysfs(torchStrength);
-}
-
-// No per-app capture request overrides on veux.
-std::vector<std::pair<std::string, uint8_t>> getCaptureRequestU8OverridesExt(
-        const std::string& /* cameraId */, const std::string& /* packageName */) {
-    return {};
+    char buffer[16];
+    const int length = snprintf(buffer, sizeof(buffer), "%d", torchStrength);
+    const ssize_t written = TEMP_FAILURE_RETRY(write(fd, buffer, length));
+    const int result = written < 0 ? -errno : (written == length ? 0 : -EIO);
+    close(fd);
+    if (result != 0) {
+        ALOGE("Could not set torch strength %d: %d", torchStrength, result);
+    }
+    return result;
 }

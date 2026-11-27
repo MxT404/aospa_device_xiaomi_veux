@@ -107,7 +107,7 @@ PRODUCT_COPY_FILES += \
     vendor/xiaomi/veux/proprietary/vendor/etc/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
 
 $(call soong_config_set_bool,camera,override_format_from_reserved,true)
-$(call soong_config_set,libcameraservice,ext_lib,libcameraservice_extension.veux)
+$(call soong_config_set,libcameraservice,ext_lib,//device/xiaomi/veux:libcameraservice_extension.veux)
 # Pass every camera client's package name to the Xiaomi HAL as a session parameter.
 $(call soong_config_set,camera,package_name,com.xiaomi.sessionparams.clientName)
 
