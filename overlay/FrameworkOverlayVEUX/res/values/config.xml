@@ -469,6 +469,10 @@
 
     <!-- Whether device supports double tap to wake -->
     <bool name="config_supportDoubleTapWake">true</bool>
+    <bool name="config_enableKeyHandler">true</bool>
+    <!-- Goodix reports the Linux KEY_WAKEUP scan code on a double tap. -->
+    <integer name="config_doubleTapKeyCode">143</integer>
+    <integer name="config_doubleTapDefault">1</integer>
 
     <!-- Config determines whether to update phone object when voice registration
          state changes. Voice radio tech change will always trigger an update of

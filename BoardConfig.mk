@@ -97,6 +97,8 @@ TARGET_KERNEL_CONFIG := vendor/veux-qgki_defconfig
 TARGET_KERNEL_SOURCE := kernel/xiaomi/veux
 KERNEL_CLANG_VERSION := r563880c
 
+TARGET_TAP_TO_WAKE_NODE := /proc/tp_gesture
+
 
 # OTA assert
 TARGET_OTA_ASSERT_DEVICE := peux|veux
