@@ -52,6 +52,8 @@ PRODUCT_PACKAGES += \
     otapreopt_script
 
 # Audio
+$(call soong_config_set_bool,tinycompress,enable_extended_compress_format,true)
+
 PRODUCT_PACKAGES += \
     android.hardware.audio@7.0-impl \
     android.hardware.audio.effect@7.0-impl \
@@ -73,7 +75,7 @@ PRODUCT_PACKAGES += \
     libvolumelistener \
     sound_trigger.primary.holi:32
 
-AUDIO_HAL_DIR := hardware/qcom-caf/sm8350/audio
+AUDIO_HAL_DIR := vendor/qcom/opensource/audio-hal/primary-hal
 AUDIO_SKU_DIR := sku_holi
 
 PRODUCT_COPY_FILES += \

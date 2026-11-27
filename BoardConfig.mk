@@ -41,6 +41,9 @@ TARGET_2ND_CPU_VARIANT := cortex-a55
 TARGET_2ND_CPU_VARIANT_RUNTIME := cortex-a55
 
 # Audio
+TARGET_PREBUILT_AUDIO_EXTENSIONS := \
+    liba2dpoffload libbatterylistener libcomprcapture libexthwplugin \
+    libhdmiedid libhdmipassthru libhfp libsndmonitor libspkrprot
 AUDIO_FEATURE_ENABLED_EXTENDED_COMPRESS_FORMAT := true
 AUDIO_FEATURE_ENABLED_GKI := true
 AUDIO_FEATURE_ENABLED_PROXY_DEVICE := true
