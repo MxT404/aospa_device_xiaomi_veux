@@ -277,8 +277,16 @@ PRODUCT_ENFORCE_RRO_TARGETS := *
 
 PRODUCT_PACKAGES += \
     CarrierConfigOverlayCOMMON \
-    NexusLauncherOverlayCOMMON \
     TelephonyOverlayCOMMON
+
+ifneq ($(TARGET_BUILD_VANILLA),true)
+PRODUCT_PACKAGES += \
+    NexusLauncherOverlayCOMMON \
+    AospWebViewOverlayVEUX
+else
+# AOSPA's common handheld configuration expects Gboard.
+PRODUCT_PACKAGES += LatinIME
+endif
 
 PRODUCT_PACKAGES += \
     FrameworkOverlayVEUX \
