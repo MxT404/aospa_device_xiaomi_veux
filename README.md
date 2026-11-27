@@ -39,6 +39,52 @@ for a manual `lunch` and `m` build. When the environment loads this device's
 Device configuration and patches are portable across build machines. Remote
 build execution uses the configuration of the machine running the build.
 
+### Signing a release OTA
+
+From the AOSPA checkout root, clone the private signing backup into
+`.repo/veux-signing-backup/`. Authenticate with `gh auth login` first if needed.
+On a fresh checkout, restore the keys and helper using the passphrase from your
+separate backup. If you already restored them on this machine, reuse the
+existing `.repo/veux-release-signing/` directory.
+
+```bash
+umask 077
+set -o pipefail
+gh repo clone MxT404/veux-release-signing-backup .repo/veux-signing-backup
+mkdir -m 700 .repo/veux-release-signing
+gpg --decrypt .repo/veux-signing-backup/veux-release-signing.tar.gpg \
+    | tar -xf - -C .repo/veux-release-signing
+```
+
+The restore places the full key set in `.repo/veux-release-signing/keys/` and
+the helper at `.repo/veux-release-signing/sign-release.py`. Keep the restored
+keys private and reuse them for future releases.
+
+Prepare the source and build the target files from the same checkout root.
+
+```bash
+device/xiaomi/veux/tools/build-calcite.sh --apply-only
+source build/envsetup.sh
+lunch aospa_veux-cp2a-user
+m otatools target-files-package
+```
+
+Sign the target files and generate the OTA.
+
+```bash
+umask 077
+sign="$PWD/.repo/veux-release-signing"
+run=$(mktemp -d "$sign/build.XXXXXXXX")
+targets=out/target/product/veux/obj/PACKAGING/target_files_intermediates/aospa_veux-target_files.zip
+python3 "$sign/sign-release.py" "$targets" "$run/signed-target_files.zip"
+
+export PATH="$PWD/out/host/linux-x86/bin:$PWD/prebuilts/jdk/jdk21/linux-x86/bin:$PATH"
+ota_from_target_files -k "$sign/keys/releasekey" \
+    "$run/signed-target_files.zip" "$run/aospa-veux-user-release.zip"
+```
+
+The signed OTA is at `$run/aospa-veux-user-release.zip`.
+
 ## Device specifications
 
 | Device           | Xiaomi POCO X4 Pro 5G / Redmi Note 11E Pro / Redmi Note 11 Pro 5G / Redmi Note 11 Pro+ 5G |
